@@ -64,6 +64,33 @@ async def list_skills(phase: str | None = None):
     }
 
 
+# --- Routes with fixed paths MUST come before {name} parameterized routes ---
+
+@router.get("/skills/health/all")
+async def get_all_health():
+    """Get health scores for all skills."""
+    return {"skills": skill_manager.get_all_health()}
+
+
+@router.get("/skills/proposals/pending")
+async def get_pending_proposals():
+    """Get all pending skill improvement proposals."""
+    return {
+        "proposals": [p.to_dict() for p in skill_manager.get_pending_proposals()],
+        "count": len(skill_manager.get_pending_proposals()),
+    }
+
+
+@router.get("/skills/proposals/all")
+async def get_all_proposals(limit: int = 50):
+    """Get all proposals (pending, approved, rejected)."""
+    return {
+        "proposals": [p.to_dict() for p in skill_manager.get_all_proposals(limit)],
+    }
+
+
+# --- Parameterized routes ---
+
 @router.get("/skills/{name}")
 async def get_skill(name: str):
     """Get a single skill definition with full details."""
@@ -115,13 +142,7 @@ async def toggle_skill(name: str, enabled: bool = True):
     return {"name": name, "enabled": defn.enabled, "version": defn.version}
 
 
-# --- Health & Usage ---
-
-@router.get("/skills/health/all")
-async def get_all_health():
-    """Get health scores for all skills."""
-    return {"skills": skill_manager.get_all_health()}
-
+# --- Health & Usage (specific {name} routes) ---
 
 @router.get("/skills/{name}/health")
 async def get_skill_health(name: str):
@@ -133,23 +154,6 @@ async def get_skill_health(name: str):
 
 
 # --- Self-Improvement Proposals ---
-
-@router.get("/skills/proposals/pending")
-async def get_pending_proposals():
-    """Get all pending skill improvement proposals."""
-    return {
-        "proposals": [p.to_dict() for p in skill_manager.get_pending_proposals()],
-        "count": len(skill_manager.get_pending_proposals()),
-    }
-
-
-@router.get("/skills/proposals/all")
-async def get_all_proposals(limit: int = 50):
-    """Get all proposals (pending, approved, rejected)."""
-    return {
-        "proposals": [p.to_dict() for p in skill_manager.get_all_proposals(limit)],
-    }
-
 
 @router.post("/skills/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str):

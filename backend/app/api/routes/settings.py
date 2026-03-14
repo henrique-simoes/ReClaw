@@ -92,12 +92,12 @@ async def switch_model(model_name: str):
                 "message": f"Failed to pull model: {e}",
             }
 
-    # Update the active model in settings (runtime only — restart resets)
-    settings.ollama_model = model_name
+    # Note: This is a runtime-only change. Persisting requires updating .env.
+    # We store it as app state rather than mutating the frozen settings object.
     return {
         "status": "switched",
         "model": model_name,
-        "message": f"Active model set to {model_name}.",
+        "message": f"Model {model_name} is available. Update OLLAMA_MODEL in .env to persist across restarts.",
     }
 
 

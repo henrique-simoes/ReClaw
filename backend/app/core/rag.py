@@ -123,8 +123,10 @@ class VectorStore:
         """Delete all chunks from a specific source file."""
         if not self._ensure_table():
             return
+        # Sanitize input to prevent injection
+        safe_source = source.replace("'", "''").replace("\\", "\\\\")
         table = self.db.open_table(self.table_name)
-        table.delete(f"source = '{source}'")
+        table.delete(f"source = '{safe_source}'")
 
     async def count(self) -> int:
         """Count total chunks in the store."""

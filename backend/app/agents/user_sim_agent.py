@@ -14,7 +14,8 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-API_BASE = "http://localhost:8000"
+import os
+API_BASE = os.getenv("RECLAW_API_BASE", "http://localhost:8000")
 
 
 class UserSimAgent:

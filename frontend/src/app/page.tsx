@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import RightPanel from "@/components/layout/RightPanel";
 import StatusBar from "@/components/layout/StatusBar";
@@ -20,15 +20,17 @@ export default function Home() {
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Global Cmd+K for search
-  if (typeof window !== "undefined") {
-    window.addEventListener("keydown", (e) => {
+  // Global Cmd+K for search (with proper cleanup)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
-    });
-  }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const renderView = () => {
     switch (activeView) {
