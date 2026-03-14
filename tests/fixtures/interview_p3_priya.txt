@@ -1,0 +1,37 @@
+[0:00] Moderator: Hi Priya, thanks for joining. What's your background?
+
+[0:12] Priya: I'm a UX designer at a startup. About 30 people. I use project management tools to track design tasks, share prototypes, and coordinate with developers.
+
+[0:35] Moderator: How was the sign-up process?
+
+[0:42] Priya: Actually, I never completed it. I got to the phone verification step and gave up. I don't give my phone number to tools I haven't tried yet. That's a hard line for me. Privacy matters.
+
+[1:10] Moderator: So you never got into the product?
+
+[1:15] Priya: Not on that first attempt. My colleague shared their screen later and I saw the product from their account. It looked really good — the design system features were impressive. But I was already annoyed from the sign-up experience so I was biased against it.
+
+[1:50] Moderator: Did you eventually create your own account?
+
+[1:55] Priya: My colleague created a team workspace and added me via an invite link. That bypassed the phone verification — I just had to confirm my email. Way better experience. But why isn't that the default flow?
+
+[2:25] Moderator: Good question. What was your onboarding like as an invited user?
+
+[2:32] Priya: Much simpler. No wizard, no forced team invites. I landed directly in the shared workspace with existing projects. I could explore right away. Within 5 minutes I had created my first task and tagged it with our design sprint labels.
+
+[3:05] Moderator: What were your first impressions of the UI?
+
+[3:12] Priya: Beautiful but complex. As a designer, I appreciated the visual design — the color system, typography, spacing. But the information density was high. Too many panels, sidebars, and options visible at once. I'd love a "simple mode" or progressive disclosure.
+
+[3:50] Moderator: Any specific pain points?
+
+[3:55] Priya: The design file integration. I expected to paste a Figma link and see a preview, but it just showed a plain URL. For a tool targeting product teams, that's a miss. Also, the notification system is overwhelming — I got 47 notifications on my first day just from team activity.
+
+[4:35] Moderator: What would you change?
+
+[4:40] Priya: Three things. First, ditch the phone verification or make it optional. Second, add progressive disclosure — show me the basics first, advanced features later. Third, integrate properly with design tools. If you're targeting product teams, Figma/Sketch integration is table stakes.
+
+[5:15] Moderator: That's great feedback. Anything positive you want to highlight?
+
+[5:22] Priya: The collaborative features are genuinely good. Real-time cursors, comment threads on tasks, the timeline view. Once you get past the setup, it's a powerful tool. The onboarding just doesn't reflect the quality of the product.
+
+[5:50] Moderator: Thank you so much, Priya.

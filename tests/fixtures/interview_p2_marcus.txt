@@ -1,0 +1,37 @@
+[0:00] Moderator: Hi Marcus, thanks for being here. Tell me about your role.
+
+[0:15] Marcus: I'm an engineering lead. I manage a team of 12 developers. I need project management tools mainly for sprint planning and progress tracking.
+
+[0:40] Moderator: Walk me through signing up for the tool.
+
+[0:48] Marcus: I'm pretty technical so the sign-up was straightforward for me. Email, password, company name. I used a strong password manager so that was fast. The phone verification was annoying though — I'm on a company phone plan and SMS verification sometimes doesn't work with our VPN.
+
+[1:30] Moderator: Did the SMS work for you?
+
+[1:35] Marcus: Took three tries. I had to disconnect from the company VPN, get the code, then reconnect. That's a 5-minute detour for something that should take 10 seconds. They should offer email verification as an alternative.
+
+[2:10] Moderator: What about the onboarding wizard?
+
+[2:18] Marcus: I skipped as much as I could. I hate onboarding wizards — just let me into the product. But some steps were mandatory. The "invite team members" thing was particularly annoying because I needed to evaluate the tool before proposing it to my team.
+
+[2:55] Moderator: Once you got in, what did you think?
+
+[3:02] Marcus: The UI is clean but there's a lot going on. I liked the API documentation — that's important for us because we'd integrate it with our CI/CD pipeline. But the navigation was weird. Some features were under "Projects," others under "Teams," and some under "Settings" — no consistent information architecture.
+
+[3:45] Moderator: Can you give me an example?
+
+[3:50] Marcus: Sure. I wanted to set up labels for our sprint categories. I looked under project settings, then team settings, then workspace settings. Turns out it was under "Workspace > Customization > Labels." That's three levels deep for something I'd use daily.
+
+[4:30] Moderator: What about the mobile experience?
+
+[4:35] Marcus: Didn't try the mobile app. I don't manage projects from my phone. But my PMs do, so that's important for the team decision.
+
+[4:55] Moderator: If you could improve one thing?
+
+[5:02] Marcus: The information architecture. Things should be findable in 1-2 clicks, not 3-4. And give me a keyboard shortcut cheat sheet — I'm a keyboard person, and clicking through menus slows me down.
+
+[5:30] Moderator: Anything else?
+
+[5:35] Marcus: The export functionality is weak. I need to generate reports for stakeholders and the export options are just CSV and PDF with bad formatting. I ended up screenshotting the dashboard, which is ridiculous for a professional tool.
+
+[6:00] Moderator: Thank you Marcus, this is very insightful.

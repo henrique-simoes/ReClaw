@@ -1,6 +1,5 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   darkMode: "class",
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
@@ -20,10 +19,6 @@ const config: Config = {
           800: "#166534",
           900: "#14532d",
         },
-        sidebar: {
-          bg: "var(--sidebar-bg)",
-          text: "var(--sidebar-text)",
-        },
       },
       keyframes: {
         "slide-in": {
@@ -34,19 +29,12 @@ const config: Config = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        pulse: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.5" },
-        },
       },
       animation: {
         "slide-in": "slide-in 0.3s ease-out",
         "fade-in": "fade-in 0.2s ease-out",
-        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
 };
-
-export default config;

@@ -1,0 +1,45 @@
+[0:00] Moderator: Thanks for joining us today, Sarah. Can you tell me a bit about yourself and how you use project management tools?
+
+[0:32] Sarah: Sure! I'm a product manager at a mid-size SaaS company. We have about 200 employees. I use project management tools daily — mostly for tracking sprints, managing backlogs, and keeping stakeholders updated.
+
+[1:15] Moderator: Great. Can you walk me through the last time you signed up for a new project management tool?
+
+[1:28] Sarah: Yeah, so about two months ago, our team decided to switch from Trello to something more robust. I was tasked with evaluating options. I found this tool through a colleague's recommendation and went to sign up.
+
+[2:05] Moderator: What was that sign-up experience like?
+
+[2:12] Sarah: Honestly, it was frustrating. The first few steps were fine — name, email, company size. But then it asked for my phone number and I was like, why do you need that? I really don't like giving my phone number to random services.
+
+[3:01] Moderator: What did you do?
+
+[3:05] Sarah: I hesitated for a while. I actually googled "does [tool] sell your phone number" before entering it. Eventually I did, but it left a bad taste. Then I had to verify via SMS which took another 3 minutes because the code didn't arrive the first time.
+
+[3:45] Moderator: That sounds frustrating. What happened next?
+
+[3:52] Sarah: After verification, I got to the onboarding wizard. It asked me to create my first project, invite team members, and set up integrations. The project creation was fine, but the invite flow was confusing — it asked for email addresses but didn't explain if it would send invites immediately or just save them.
+
+[4:30] Moderator: Did you end up inviting anyone?
+
+[4:35] Sarah: No, I skipped that step entirely. I wanted to explore the tool first before dragging my team into it. But the wizard wouldn't let me skip — it kept saying "invite at least one team member." I had to enter my own secondary email just to proceed.
+
+[5:15] Moderator: How did that make you feel?
+
+[5:20] Sarah: Annoyed. Like, let me explore your product! Don't force me to commit before I've even seen what it does. It felt pushy.
+
+[5:45] Moderator: Once you got past the wizard, what was your first impression of the dashboard?
+
+[5:52] Sarah: Overwhelming. There were so many features and buttons. I couldn't figure out where to start. There was a tutorial overlay but it covered too many features at once. I closed it after the third tooltip.
+
+[6:30] Moderator: What did you do instead?
+
+[6:35] Sarah: I tried to create a simple task to test the basic flow. But I couldn't find the "create task" button — it was hidden inside a project board that I hadn't set up properly. I spent about 5 minutes just trying to create my first task.
+
+[7:20] Moderator: If you could change one thing about the onboarding experience, what would it be?
+
+[7:28] Sarah: Let me explore freely. Give me a sample project pre-loaded with data so I can see how the tool works before I have to set up everything from scratch. And definitely don't force me to invite people before I'm ready.
+
+[8:00] Moderator: That's really helpful feedback. Is there anything else you'd like to share?
+
+[8:10] Sarah: Just that the core product seems really powerful once you get past the setup. The board view is great, the timeline feature is impressive. The onboarding just doesn't do it justice. Oh, and the mobile app — I tried it on my phone and the navigation was completely different from the web version. That was confusing.
+
+[8:45] Moderator: Thank you so much for your time, Sarah. This has been incredibly valuable.

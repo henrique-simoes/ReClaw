@@ -7,10 +7,11 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD-SHELL", "ollama list || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     # GPU support: uncomment for NVIDIA GPUs, or use docker-compose.gpu.yml override
     # deploy:
     #   resources:
@@ -44,13 +45,7 @@ services:
       - RAG_TOP_K=${RAG_TOP_K:-5}
       - RAG_SCORE_THRESHOLD=${RAG_SCORE_THRESHOLD:-0.7}
     depends_on:
-      ollama:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ollama
     restart: unless-stopped
 
   frontend:
@@ -64,8 +59,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
 
 volumes:
