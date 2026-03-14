@@ -1,74 +1,49 @@
-# User Interviews Skill
+---
+name: user-interviews
+description: "Plan, conduct, and analyze user interviews. Generate interview guides, process transcripts, extract nuggets and themes, synthesize findings."
+metadata:
+  reclaw:
+    phase: discover
+    type: qualitative
+    version: "1.0.0"
+---
 
-> Plan, conduct, and analyze user interviews for UX Research projects.
+# User Interviews
 
-## Overview
+## Capabilities
 
-User interviews are the cornerstone of qualitative UX research. This skill helps researchers through the entire interview lifecycle:
+- Generate semi-structured interview guides from research questions and project context
+- Process interview transcripts (TXT, PDF, DOCX) — extract nuggets, themes, patterns
+- Identify follow-up questions and research gaps
+- Synthesize findings across multiple interviews with cross-cutting themes
+- Calculate intercoder reliability when multiple coders are involved
 
-1. **Planning** — Generate semi-structured interview guides
-2. **Conducting** — Provide best practices and facilitation tips
-3. **Analyzing** — Process transcripts, extract nuggets, identify themes
-4. **Synthesizing** — Cross-reference findings across multiple interviews
+## Workflow
 
-## Modes
+1. **Plan** — Provide research questions → receive interview guide with probes
+2. **Conduct** — Use the guide (ReClaw provides facilitation tips)
+3. **Upload** — Drop transcript files into the project
+4. **Analyze** — ReClaw extracts nuggets, tags themes, scores confidence
+5. **Synthesize** — Cross-interview patterns → facts → insights → recommendations
 
-### `plan` — Generate Interview Guide
+## Input
 
-**Input:**
-- Research questions (what you want to learn)
-- Project context (product, users, goals)
-- Number of participants (default: 5)
+- Research questions (text)
+- Interview transcripts (TXT, PDF, DOCX, MD)
+- Project context (auto-loaded from context layers)
 
-**Output:**
-- Semi-structured interview guide with:
-  - Introduction script
-  - Warm-up questions (2-3)
-  - Core questions organized by theme (8-12), each with follow-up probes
-  - Closing questions
-  - Debrief script
+## Output
 
-### `analyze` — Process Transcripts
-
-**Input:**
-- One or more transcript files (TXT, PDF, DOCX)
-- Project context
-
-**Output:**
-- **Nuggets** — Direct quotes and observations with timestamps, tags, and emotional tone
-- **Themes** — Recurring patterns across the transcript
-- **Pain Points** — Issues identified with severity ratings
-- **Opportunities** — Unmet needs and positive signals
-- **Follow-up Questions** — Areas to explore in future interviews
-- **Participant Summary** — Quick overview of this participant
-
-### `synthesize` — Cross-Interview Analysis (automatic when >1 transcript)
-
-**Output:**
-- Cross-cutting themes with participant counts
-- Verified facts with evidence chains
-- Research insights with confidence levels
-- Actionable recommendations with priority/effort ratings
-- Research gaps and suggested methods to fill them
+- Interview guide (Markdown)
+- Nuggets with source references and timestamps
+- Thematic analysis with strength indicators
+- Pain points with severity ratings
+- Synthesis report with cross-cutting themes and evidence chains
 
 ## Best Practices
 
-- **Sample size:** 5-8 participants per user segment for saturation
-- **Duration:** 45-60 minutes per session
-- **Recording:** Always record (with consent) for accurate analysis
-- **Probing:** "Tell me more about that" > "Did you like it?"
-- **Neutrality:** Don't lead the participant toward desired answers
-- **Follow-ups:** The best insights come from follow-up probes, not scripted questions
-
-## Atomic Research Mapping
-
-```
-Interview Recording → Transcript → Nuggets → Facts → Insights → Recommendations
-                                    (quotes)   (verified)  (patterns)   (actions)
-```
-
-Every nugget includes:
-- Source file and timestamp
-- Relevant tags for cross-referencing
-- Emotional tone indicator
-- Confidence score
+- 5-8 participants per segment for saturation
+- 45-60 min per session
+- Always record with consent
+- "Tell me more" > "Did you like it?"
+- Probes yield the best insights, not scripted questions
