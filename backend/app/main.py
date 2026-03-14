@@ -114,7 +114,7 @@ async def health_check() -> dict:
     return {"status": "healthy", "service": "reclaw"}
 
 
-@app.get("/api/skills/registry")
+@app.get("/api/skill-registry")
 async def list_registered_skills():
     """List all registered skills from the runtime registry."""
     from app.skills.registry import registry

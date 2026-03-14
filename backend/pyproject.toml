@@ -23,6 +23,7 @@ dependencies = [
     "aiofiles>=24.1.0",
     "psutil>=6.0.0",
     "pyyaml>=6.0.0",
+    "pandas>=2.2.0",
 ]
 
 [project.optional-dependencies]
