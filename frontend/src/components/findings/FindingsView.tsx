@@ -14,6 +14,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { findings as findingsApi } from "@/lib/api";
 import type { FindingsSummary, Nugget, Fact, Insight, Recommendation, ProjectPhase } from "@/lib/types";
 import { cn, confidenceColor, phaseLabel } from "@/lib/utils";
+import AtomicDrilldown from "./AtomicDrilldown";
 
 const PHASE_TABS: { id: ProjectPhase; label: string; icon: typeof Diamond }[] = [
   { id: "discover", label: "Discover", icon: Diamond },
@@ -31,6 +32,11 @@ export default function FindingsView() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>("insights");
+  const [drilldownFinding, setDrilldownFinding] = useState<{
+    id: string;
+    type: "recommendation" | "insight" | "fact" | "nugget";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -183,7 +189,16 @@ export default function FindingsView() {
                   </p>
                 ) : (
                   section.items.map((item: any) => (
-                    <div key={item.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                    <div
+                      key={item.id}
+                      onClick={() =>
+                        setDrilldownFinding({
+                          id: item.id,
+                          type: section.id as any,
+                          text: item.text,
+                        })
+                      }
+                      className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer">
                       <p className="text-sm text-slate-900 dark:text-white">{item.text}</p>
                       <div className="flex items-center gap-3 mt-2">
                         {item.confidence !== undefined && (
@@ -227,6 +242,15 @@ export default function FindingsView() {
           </div>
         ))}
       </div>
+
+      {/* Atomic Research Drill-Down Modal */}
+      {drilldownFinding && activeProjectId && (
+        <AtomicDrilldown
+          projectId={activeProjectId}
+          finding={drilldownFinding}
+          onClose={() => setDrilldownFinding(null)}
+        />
+      )}
     </div>
   );
 }

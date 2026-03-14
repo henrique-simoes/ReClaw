@@ -10,6 +10,7 @@ from watchfiles import awatch, Change
 from app.core.embeddings import embed_chunks
 from app.core.file_processor import get_supported_extensions, process_file
 from app.core.rag import VectorStore
+from app.api.websocket import broadcast_file_processed
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,13 @@ class FileWatcher:
             "pages": result.pages,
         }
         logger.info(f"Processed {file_path}: {count} chunks indexed")
+
+        # Notify UI via WebSocket
+        try:
+            await broadcast_file_processed(file_path.name, count, project_id)
+        except Exception:
+            pass  # Don't fail file processing if broadcast fails
+
         return summary
 
     async def scan_directory(self, directory: str, project_id: str) -> list[dict]:
