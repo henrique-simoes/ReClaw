@@ -7,12 +7,15 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import audit, chat, files, findings, projects, settings, skills, tasks
+from app.api.routes import agents, audit, chat, files, findings, projects, settings, skills, tasks
 from app.api.websocket import router as ws_router
 from app.agents.devops_agent import devops_agent
 from app.agents.ui_audit_agent import ui_audit_agent
-from app.core.agent import agent as agent_orchestrator
+from app.agents.ux_eval_agent import ux_eval_agent
+from app.agents.user_sim_agent import user_sim_agent
+from app.agents.orchestrator import meta_orchestrator
 from app.config import settings as app_settings
+from app.core.agent import agent as agent_orchestrator
 from app.core.file_watcher import FileWatcher
 from app.models.database import init_db
 from app.skills.registry import load_default_skills
@@ -26,17 +29,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app_settings.ensure_dirs()
     await init_db()
     load_default_skills()
-    skill_manager.load_all()  # Load individual skill definition files
+    skill_manager.load_all()
 
     # Start file watcher
     watcher = FileWatcher()
     watcher_task = asyncio.create_task(watcher.start())
     app.state.file_watcher = watcher
 
-    # Start audit agents and orchestrator
-    devops_task = asyncio.create_task(devops_agent.start())
-    ui_audit_task = asyncio.create_task(ui_audit_agent.start())
-    agent_task = asyncio.create_task(agent_orchestrator.start())
+    # Start all agents and orchestrator
+    bg_tasks = [
+        asyncio.create_task(devops_agent.start()),
+        asyncio.create_task(ui_audit_agent.start()),
+        asyncio.create_task(ux_eval_agent.start()),
+        asyncio.create_task(user_sim_agent.start()),
+        asyncio.create_task(agent_orchestrator.start()),
+        asyncio.create_task(meta_orchestrator.start()),
+    ]
 
     yield
 
@@ -44,9 +52,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     watcher.stop()
     devops_agent.stop()
     ui_audit_agent.stop()
+    ux_eval_agent.stop()
+    user_sim_agent.stop()
     agent_orchestrator.stop()
+    meta_orchestrator.stop()
 
-    for task in [watcher_task, devops_task, ui_audit_task, agent_task]:
+    for task in [watcher_task, *bg_tasks]:
         task.cancel()
         try:
             await task
@@ -63,7 +74,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,6 +89,7 @@ app.include_router(files.router, prefix="/api", tags=["Files"])
 app.include_router(settings.router, prefix="/api", tags=["Settings"])
 app.include_router(audit.router, prefix="/api", tags=["Audit"])
 app.include_router(skills.router, prefix="/api", tags=["Skills"])
+app.include_router(agents.router, prefix="/api", tags=["Agents"])
 app.include_router(ws_router)
 
 

@@ -27,6 +27,8 @@ from app.core.rag import retrieve_context, ingest_chunks
 from app.core.self_check import verify_claim, Confidence
 from app.core.file_processor import process_file
 from app.core.embeddings import TextChunk
+from app.core.context_hierarchy import context_hierarchy
+from app.core.resource_governor import governor
 from app.models.database import async_session
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
@@ -75,6 +77,16 @@ class AgentOrchestrator:
 
     async def _work_cycle(self) -> bool:
         """Run one work cycle. Returns True if a task was executed."""
+        # Check resource budget before doing work
+        can_start, reason = governor.can_start_agent("task-executor")
+        if not can_start:
+            logger.info(f"Agent paused: {reason}")
+            await broadcast_agent_status("paused", reason)
+            return False
+
+        # Apply throttle if system is under pressure
+        await governor.throttle_if_needed()
+
         async with async_session() as db:
             # 1. Find the next task to work on
             task = await self._pick_next_task(db)
@@ -262,18 +274,15 @@ class AgentOrchestrator:
         """Handle tasks without a specific skill — use general LLM reasoning."""
         context = await retrieve_context(project.id, task.title + " " + task.description)
 
-        system_prompt = (
-            "You are ReClaw, an expert UX Research assistant. "
-            "Complete the following research task thoroughly. "
-            "Cite sources when referencing documents. "
-            "Structure your response with clear findings."
+        # Use the full context hierarchy as system prompt
+        system_prompt = await context_hierarchy.compose_context(
+            db,
+            project_id=project.id,
+            task_context=task.user_context or task.description,
         )
-        if project.project_context:
-            system_prompt += f"\n\nProject context: {project.project_context}"
-        if project.company_context:
-            system_prompt += f"\n\nCompany context: {project.company_context}"
+
         if context.has_context:
-            system_prompt += f"\n\nRelevant documents:\n{context.context_text}"
+            system_prompt += f"\n\n## Relevant Documents\n{context.context_text}"
 
         response = await ollama.chat(
             messages=[{"role": "user", "content": f"Task: {task.title}\n\nDetails: {task.description}\n\nAdditional context: {task.user_context}"}],
