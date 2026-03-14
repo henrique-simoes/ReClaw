@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Search, X, Sparkles, FileText, Lightbulb, Target, Loader2 } from "lucide-react";
+import FocusTrap from "./FocusTrap";
 import { useProjectStore } from "@/stores/projectStore";
 import { findings as findingsApi } from "@/lib/api";
 import { cn, confidenceColor } from "@/lib/utils";
@@ -17,6 +18,7 @@ interface SearchResult {
 interface SearchModalProps {
   open: boolean;
   onClose: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 const TYPE_ICONS = {
@@ -33,7 +35,7 @@ const TYPE_COLORS = {
   recommendation: "text-green-600",
 };
 
-export default function SearchModal({ open, onClose }: SearchModalProps) {
+export default function SearchModal({ open, onClose, onNavigate }: SearchModalProps) {
   const { activeProjectId } = useProjectStore();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -118,6 +120,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-[15vh]">
+      <FocusTrap>
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
         {/* Search input */}
         <div className="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-700">
@@ -150,6 +153,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 return (
                   <div
                     key={i}
+                    onClick={() => { onNavigate?.("findings"); onClose(); }}
                     className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                   >
                     <Icon size={16} className={cn("shrink-0 mt-0.5", color)} />
@@ -204,6 +208,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           <span>⌘K Toggle</span>
         </div>
       </div>
+      </FocusTrap>
     </div>
   );
 }

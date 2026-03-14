@@ -6,6 +6,7 @@ import { useTaskStore } from "@/stores/taskStore";
 import { useProjectStore } from "@/stores/projectStore";
 import type { TaskStatus } from "@/lib/types";
 import { cn, statusLabel } from "@/lib/utils";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
 const COLUMNS: { id: TaskStatus; color: string }[] = [
   { id: "backlog", color: "border-t-slate-400" },
@@ -20,6 +21,7 @@ export default function KanbanBoard() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [addingTo, setAddingTo] = useState<TaskStatus | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeProjectId) {
@@ -176,7 +178,7 @@ export default function KanbanBoard() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                deleteTask(task.id);
+                                setDeleteConfirm(task.id);
                               }}
                               className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600"
                             >
@@ -193,6 +195,20 @@ export default function KanbanBoard() {
           );
         })}
       </div>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteConfirm) deleteTask(deleteConfirm);
+          setDeleteConfirm(null);
+        }}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.agent import agent
 from app.core.ollama import ollama
 from app.core.rag import build_augmented_prompt, retrieve_context
-from app.models.database import get_db
+from app.models.database import get_db, async_session
 from app.models.message import Message
 from app.models.project import Project
 from app.skills.registry import registry
@@ -226,7 +226,10 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         messages.append({"role": "user", "content": request.message})
 
     async def generate():
-        """Stream the LLM response as SSE events."""
+        """Stream the LLM response as SSE events.
+
+        Uses its own DB session to avoid leak when client disconnects mid-stream.
+        """
         full_response = []
 
         try:
@@ -238,29 +241,44 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                 event_data = json.dumps({"type": "chunk", "content": chunk})
                 yield f"data: {event_data}\n\n"
 
-            # Save assistant response
-            assistant_content = "".join(full_response)
-            assistant_msg = Message(
-                id=str(uuid.uuid4()),
-                project_id=request.project_id,
-                role="assistant",
-                content=assistant_content,
-            )
-            db.add(assistant_msg)
-            await db.commit()
+            # Save assistant response in a fresh session (avoids leak)
+            async with async_session() as save_db:
+                assistant_content = "".join(full_response)
+                assistant_msg = Message(
+                    id=str(uuid.uuid4()),
+                    project_id=request.project_id,
+                    role="assistant",
+                    content=assistant_content,
+                )
+                save_db.add(assistant_msg)
+                await save_db.commit()
 
-            # Send completion event with sources
-            sources = [
-                {"source": r.source, "score": r.score, "page": r.page}
-                for r in rag_context.retrieved
-            ]
-            done_data = json.dumps({
-                "type": "done",
-                "message_id": assistant_msg.id,
-                "sources": sources,
-            })
-            yield f"data: {done_data}\n\n"
+                sources = [
+                    {"source": r.source, "score": r.score, "page": r.page}
+                    for r in rag_context.retrieved
+                ]
+                done_data = json.dumps({
+                    "type": "done",
+                    "message_id": assistant_msg.id,
+                    "sources": sources,
+                })
+                yield f"data: {done_data}\n\n"
 
+        except GeneratorExit:
+            # Client disconnected mid-stream — save what we have
+            if full_response:
+                try:
+                    async with async_session() as save_db:
+                        msg = Message(
+                            id=str(uuid.uuid4()),
+                            project_id=request.project_id,
+                            role="assistant",
+                            content="".join(full_response) + "\n\n[Response interrupted]",
+                        )
+                        save_db.add(msg)
+                        await save_db.commit()
+                except Exception:
+                    pass
         except Exception as e:
             error_data = json.dumps({"type": "error", "message": str(e)})
             yield f"data: {error_data}\n\n"

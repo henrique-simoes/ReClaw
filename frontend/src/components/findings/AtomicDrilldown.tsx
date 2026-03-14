@@ -179,17 +179,69 @@ function buildChain(
   facts: Fact[],
   nuggets: Nugget[]
 ) {
-  // For now, show all findings at the project level
-  // In a full implementation, these would be linked via IDs
+  // Follow real relationships via linked IDs where available
+  // Fall back to showing all findings at same phase when no links exist
+
+  const parseIds = (json: string | string[]): string[] => {
+    if (Array.isArray(json)) return json;
+    if (!json) return [];
+    try { return JSON.parse(json); } catch { return []; }
+  };
+
   switch (finding.type) {
-    case "recommendation":
-      return { recommendations: [], insights: insights.slice(0, 5), facts: facts.slice(0, 5), nuggets: nuggets.slice(0, 8) };
-    case "insight":
-      return { recommendations: recs.slice(0, 3), insights: [], facts: facts.slice(0, 5), nuggets: nuggets.slice(0, 8) };
-    case "fact":
-      return { recommendations: [], insights: insights.slice(0, 3), facts: [], nuggets: nuggets.slice(0, 8) };
-    case "nugget":
-      return { recommendations: [], insights: [], facts: facts.slice(0, 3), nuggets: [] };
+    case "recommendation": {
+      const rec = recs.find((r) => r.id === finding.id);
+      const linkedInsightIds = rec ? parseIds(rec.insight_ids) : [];
+      const linkedInsights = linkedInsightIds.length > 0
+        ? insights.filter((i) => linkedInsightIds.includes(i.id))
+        : insights.slice(0, 5);
+
+      const allFactIds = linkedInsights.flatMap((i) => parseIds(i.fact_ids));
+      const linkedFacts = allFactIds.length > 0
+        ? facts.filter((f) => allFactIds.includes(f.id))
+        : facts.slice(0, 5);
+
+      const allNuggetIds = linkedFacts.flatMap((f) => parseIds(f.nugget_ids));
+      const linkedNuggets = allNuggetIds.length > 0
+        ? nuggets.filter((n) => allNuggetIds.includes(n.id))
+        : nuggets.slice(0, 8);
+
+      return { recommendations: [], insights: linkedInsights, facts: linkedFacts, nuggets: linkedNuggets };
+    }
+    case "insight": {
+      const insight = insights.find((i) => i.id === finding.id);
+      const linkedFactIds = insight ? parseIds(insight.fact_ids) : [];
+      const linkedFacts = linkedFactIds.length > 0
+        ? facts.filter((f) => linkedFactIds.includes(f.id))
+        : facts.slice(0, 5);
+
+      const allNuggetIds = linkedFacts.flatMap((f) => parseIds(f.nugget_ids));
+      const linkedNuggets = allNuggetIds.length > 0
+        ? nuggets.filter((n) => allNuggetIds.includes(n.id))
+        : nuggets.slice(0, 8);
+
+      // Find recommendations that link to this insight
+      const linkedRecs = recs.filter((r) => parseIds(r.insight_ids).includes(finding.id));
+
+      return { recommendations: linkedRecs.length > 0 ? linkedRecs : recs.slice(0, 3), insights: [], facts: linkedFacts, nuggets: linkedNuggets };
+    }
+    case "fact": {
+      const fact = facts.find((f) => f.id === finding.id);
+      const linkedNuggetIds = fact ? parseIds(fact.nugget_ids) : [];
+      const linkedNuggets = linkedNuggetIds.length > 0
+        ? nuggets.filter((n) => linkedNuggetIds.includes(n.id))
+        : nuggets.slice(0, 8);
+
+      // Find insights that reference this fact
+      const linkedInsights = insights.filter((i) => parseIds(i.fact_ids).includes(finding.id));
+
+      return { recommendations: [], insights: linkedInsights.length > 0 ? linkedInsights : insights.slice(0, 3), facts: [], nuggets: linkedNuggets };
+    }
+    case "nugget": {
+      // Find facts that reference this nugget
+      const linkedFacts = facts.filter((f) => parseIds(f.nugget_ids).includes(finding.id));
+      return { recommendations: [], insights: [], facts: linkedFacts.length > 0 ? linkedFacts : facts.slice(0, 3), nuggets: [] };
+    }
     default:
       return { recommendations: [], insights: [], facts: [], nuggets: [] };
   }
