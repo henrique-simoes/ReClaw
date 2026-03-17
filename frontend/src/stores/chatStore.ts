@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import type { ChatMessage } from "@/lib/types";
-import { chat as chatApi } from "@/lib/api";
+import { chat as chatApi, sessions as sessionsApi } from "@/lib/api";
 
 interface ChatStore {
   messages: ChatMessage[];
@@ -11,8 +11,8 @@ interface ChatStore {
   error: string | null;
   abortController: AbortController | null;
 
-  fetchHistory: (projectId: string) => Promise<void>;
-  sendMessage: (projectId: string, content: string) => Promise<void>;
+  fetchHistory: (projectId: string, sessionId?: string) => Promise<void>;
+  sendMessage: (projectId: string, content: string, sessionId?: string) => Promise<void>;
   cancelStreaming: () => void;
   clearMessages: () => void;
 }
@@ -24,16 +24,29 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   error: null,
   abortController: null,
 
-  fetchHistory: async (projectId) => {
+  fetchHistory: async (projectId, sessionId) => {
     try {
-      const history = await chatApi.history(projectId);
-      set({ messages: history, error: null });
+      if (sessionId) {
+        // Fetch session-scoped messages
+        const detail = await sessionsApi.get(sessionId);
+        const msgs: ChatMessage[] = (detail.messages || []).map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          created_at: m.created_at,
+          agent_id: m.agent_id,
+        }));
+        set({ messages: msgs, error: null });
+      } else {
+        const history = await chatApi.history(projectId);
+        set({ messages: history, error: null });
+      }
     } catch (e: any) {
       set({ error: e.message });
     }
   },
 
-  sendMessage: async (projectId, content) => {
+  sendMessage: async (projectId, content, sessionId) => {
     // Add user message immediately
     const userMsg: ChatMessage = {
       id: `temp-${Date.now()}`,
@@ -54,7 +67,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       let messageId = "";
       let sources: any[] = [];
 
-      for await (const event of chatApi.send(projectId, content)) {
+      for await (const event of chatApi.send(projectId, content, sessionId)) {
         if (event.type === "chunk") {
           fullContent += event.content;
           set({ streamingContent: fullContent });

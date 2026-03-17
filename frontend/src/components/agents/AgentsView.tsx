@@ -70,20 +70,24 @@ const STATE_COLORS: Record<string, string> = {
   stopped: "text-slate-400",
 };
 
-function HeartbeatDot({ status, size = "sm" }: { status: HeartbeatStatus; size?: "sm" | "md" }) {
+function HeartbeatDot({ status, isActive, size = "sm" }: { status: HeartbeatStatus; isActive?: boolean; size?: "sm" | "md" }) {
   const sizeClass = size === "md" ? "w-3 h-3" : "w-2 h-2";
-  const colors: Record<HeartbeatStatus, string> = {
+  const colors: Record<string, string> = {
     healthy: "bg-green-500",
     degraded: "bg-yellow-500",
     error: "bg-red-500",
     stopped: "bg-slate-400",
   };
 
+  // Active agents that haven't reported heartbeat yet default to green
+  const effectiveStatus = colors[status] ? status : (isActive ? "healthy" : "stopped");
+  const color = colors[effectiveStatus] || "bg-green-500";
+
   return (
     <span className="relative inline-flex">
-      <span className={cn("rounded-full", sizeClass, colors[status])} />
-      {status === "healthy" && (
-        <span className={cn("absolute rounded-full animate-ping opacity-75", sizeClass, colors[status])} />
+      <span className={cn("rounded-full", sizeClass, color)} />
+      {(effectiveStatus === "healthy") && (
+        <span className={cn("absolute rounded-full animate-ping opacity-75", sizeClass, color)} />
       )}
     </span>
   );
@@ -297,9 +301,24 @@ function CreateAgentWizard({ onDone }: { onDone: () => void }) {
                   <Users size={14} />
                   <span>{capacity.current_agents}/{capacity.max_agents} agents</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                  <HardDrive size={14} />
-                  <span>{capacity.ram_available_gb}GB / {capacity.ram_total_gb}GB RAM</span>
+                <div className="text-xs text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2 mb-1">
+                    <HardDrive size={14} />
+                    <span>{capacity.ram_available_gb}GB free of {capacity.ram_total_gb}GB RAM</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all", {
+                        "bg-green-500": capacity.ram_available_gb / capacity.ram_total_gb > 0.3,
+                        "bg-yellow-500": capacity.ram_available_gb / capacity.ram_total_gb <= 0.3 && capacity.ram_available_gb / capacity.ram_total_gb > 0.1,
+                        "bg-red-500": capacity.ram_available_gb / capacity.ram_total_gb <= 0.1,
+                      })}
+                      style={{ width: `${Math.round(((capacity.ram_total_gb - capacity.ram_available_gb) / capacity.ram_total_gb) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {Math.round(((capacity.ram_total_gb - capacity.ram_available_gb) / capacity.ram_total_gb) * 100)}% used
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                   <Cpu size={14} />
@@ -660,7 +679,7 @@ export default function AgentsView() {
                           </p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <HeartbeatDot status={agent.heartbeat_status} size="md" />
+                          <HeartbeatDot status={agent.heartbeat_status} isActive={agent.is_active && agent.state !== "paused"} size="md" />
                           <span className={cn("text-xs capitalize", STATE_COLORS[agent.state])}>{agent.state}</span>
                           {expanded ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
                         </div>
@@ -748,7 +767,7 @@ export default function AgentsView() {
                             </p>
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
-                            <HeartbeatDot status={agent.heartbeat_status} size="md" />
+                            <HeartbeatDot status={agent.heartbeat_status} isActive={agent.is_active && agent.state !== "paused"} size="md" />
                             <span className={cn("text-xs capitalize", STATE_COLORS[agent.state])}>{agent.state}</span>
                             {expanded ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
                           </div>

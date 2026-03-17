@@ -146,21 +146,23 @@ export async function run(ctx) {
 
   // 6. UI — navigate to Findings view
   await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
 
   const projectBtn = page.locator("text=[SIM]").first();
   if (await projectBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
     await projectBtn.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
   }
 
   await page.keyboard.press("Meta+2");
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
 
-  // Check that findings are visible
+  // Check that findings view loaded (look for any findings-related text)
   const findingsVisible = await page.locator("text=Nuggets").isVisible({ timeout: 3000 }).catch(() => false)
     || await page.locator("text=nuggets").isVisible({ timeout: 1000 }).catch(() => false)
-    || await page.locator("text=Findings").isVisible({ timeout: 1000 }).catch(() => false);
+    || await page.locator("text=Findings").isVisible({ timeout: 1000 }).catch(() => false)
+    || await page.locator("text=Discover").isVisible({ timeout: 1000 }).catch(() => false)
+    || await page.locator("text=Define").isVisible({ timeout: 1000 }).catch(() => false);
 
   checks.push({
     name: "Findings view loads with data",

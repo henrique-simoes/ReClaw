@@ -39,6 +39,12 @@ const PRESET_INFO: Record<string, { icon: string; label: string; desc: string }>
   custom: { icon: "🔧", label: "Custom", desc: "Your own temperature, tokens, context." },
 };
 
+const REASONING_PRESETS: Record<string, { temperature: number; maxTokens: number; topP: number }> = {
+  quick: { temperature: 0.3, maxTokens: 1024, topP: 0.8 },
+  balanced: { temperature: 0.7, maxTokens: 2048, topP: 0.9 },
+  deep: { temperature: 0.9, maxTokens: 4096, topP: 0.95 },
+};
+
 function CustomLLMPanel({
   session,
   onUpdate,
@@ -82,7 +88,13 @@ function CustomLLMPanel({
           {(["quick", "balanced", "deep"] as const).map((level) => (
             <button
               key={level}
-              onClick={() => setReasoning(level)}
+              onClick={() => {
+                setReasoning(level);
+                const preset = REASONING_PRESETS[level];
+                setTemperature(preset.temperature);
+                setMaxTokens(preset.maxTokens);
+                setTopP(preset.topP);
+              }}
               className={cn(
                 "py-1.5 px-2 text-xs rounded-md transition-colors capitalize",
                 reasoning === level
@@ -331,9 +343,9 @@ export default function ChatView() {
   useEffect(() => {
     if (activeProjectId) {
       setLoadingHistory(true);
-      fetchHistory(activeProjectId).finally(() => setLoadingHistory(false));
+      fetchHistory(activeProjectId, activeSessionId || undefined).finally(() => setLoadingHistory(false));
     }
-  }, [activeProjectId, fetchHistory]);
+  }, [activeProjectId, activeSessionId, fetchHistory]);
 
   useEffect(() => {
     if (activeProjectId) {
@@ -348,7 +360,7 @@ export default function ChatView() {
 
   const handleSend = () => {
     if (!input.trim() || !activeProjectId || streaming) return;
-    sendMessage(activeProjectId, input.trim());
+    sendMessage(activeProjectId, input.trim(), activeSessionId || undefined);
     setInput("");
   };
 
@@ -361,7 +373,8 @@ export default function ChatView() {
       // Show confirmation in chat
       await sendMessage(
         activeProjectId,
-        `I just uploaded "${file.name}" (${result.chunks_indexed} chunks indexed). Can you analyze it?`
+        `I just uploaded "${file.name}" (${result.chunks_indexed} chunks indexed). Can you analyze it?`,
+        activeSessionId || undefined,
       );
     } catch (err) {
       console.error("Upload failed:", err);
@@ -390,7 +403,7 @@ export default function ChatView() {
     if (!file) return;
     try {
       const result = await filesApi.upload(activeProjectId, file);
-      await sendMessage(activeProjectId, `I just uploaded "${file.name}" (${result.chunks_indexed} chunks indexed). Can you analyze it?`);
+      await sendMessage(activeProjectId, `I just uploaded "${file.name}" (${result.chunks_indexed} chunks indexed). Can you analyze it?`, activeSessionId || undefined);
     } catch (err) {
       console.error("Drop upload failed:", err);
     }

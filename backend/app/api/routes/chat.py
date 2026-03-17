@@ -122,6 +122,7 @@ class ChatRequest(BaseModel):
 
     message: str
     project_id: str
+    session_id: str | None = None
     include_history: bool = True
     max_history: int = 20
 
@@ -151,6 +152,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     user_msg = Message(
         id=str(uuid.uuid4()),
         project_id=request.project_id,
+        session_id=request.session_id,
         role="user",
         content=request.message,
     )
@@ -181,6 +183,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         assistant_msg = Message(
             id=str(uuid.uuid4()),
             project_id=request.project_id,
+            session_id=request.session_id,
             role="assistant",
             content=skill_response,
         )
@@ -207,14 +210,14 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
         company_context=project.company_context or None,
     )
 
-    # Build message history
+    # Build message history (scoped to session if provided)
     messages = []
     if request.include_history:
+        history_query = select(Message).where(Message.project_id == request.project_id)
+        if request.session_id:
+            history_query = history_query.where(Message.session_id == request.session_id)
         history_result = await db.execute(
-            select(Message)
-            .where(Message.project_id == request.project_id)
-            .order_by(Message.created_at.desc())
-            .limit(request.max_history)
+            history_query.order_by(Message.created_at.desc()).limit(request.max_history)
         )
         history = list(reversed(history_result.scalars().all()))
 
@@ -256,6 +259,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                 assistant_msg = Message(
                     id=str(uuid.uuid4()),
                     project_id=request.project_id,
+                    session_id=request.session_id,
                     role="assistant",
                     content=assistant_content,
                 )
@@ -281,6 +285,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                         msg = Message(
                             id=str(uuid.uuid4()),
                             project_id=request.project_id,
+                            session_id=request.session_id,
                             role="assistant",
                             content="".join(full_response) + "\n\n[Response interrupted]",
                         )
@@ -306,16 +311,15 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/chat/history/{project_id}")
 async def get_chat_history(
     project_id: str,
+    session_id: str | None = None,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
 ) -> list[ChatMessage]:
-    """Get chat history for a project."""
-    result = await db.execute(
-        select(Message)
-        .where(Message.project_id == project_id)
-        .order_by(Message.created_at.asc())
-        .limit(limit)
-    )
+    """Get chat history for a project, optionally scoped to a session."""
+    query = select(Message).where(Message.project_id == project_id)
+    if session_id:
+        query = query.where(Message.session_id == session_id)
+    result = await db.execute(query.order_by(Message.created_at.asc()).limit(limit))
     messages = result.scalars().all()
 
     return [

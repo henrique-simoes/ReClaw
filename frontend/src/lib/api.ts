@@ -68,11 +68,13 @@ export const tasks = {
 // --- Chat ---
 
 export const chat = {
-  send: async function* (projectId: string, message: string) {
+  send: async function* (projectId: string, message: string, sessionId?: string) {
+    const payload: Record<string, unknown> = { message, project_id: projectId };
+    if (sessionId) payload.session_id = sessionId;
     const res = await fetch(`${API_BASE}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, project_id: projectId }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) throw new Error(`Chat error: ${res.status}`);

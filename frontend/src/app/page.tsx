@@ -22,6 +22,8 @@ import MobileNav from "@/components/layout/MobileNav";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import OllamaCheck from "@/components/common/OllamaCheck";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { settings as settingsApi } from "@/lib/api";
 
 export default function Home() {
@@ -54,12 +56,27 @@ export default function Home() {
 
   // Handle reclaw:navigate events from AgentsView, ToastNotification, etc.
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (typeof detail === "string") {
         setActiveView(detail);
       } else if (detail?.view) {
         setActiveView(detail.view);
+        // If navigating to chat with a specific agent, create/find a session for that agent
+        if (detail.agent_id && detail.view === "chat") {
+          const { sessions, createSession, selectSession } = useSessionStore.getState();
+          const { activeProjectId } = useProjectStore.getState();
+          if (activeProjectId) {
+            const existing = sessions.find((s) => s.agent_id === detail.agent_id);
+            if (existing) {
+              selectSession(existing.id);
+            } else {
+              const agents = useAgentStore.getState().agents;
+              const agent = agents.find((a) => a.id === detail.agent_id);
+              await createSession(activeProjectId, `Chat with ${agent?.name || "Agent"}`, detail.agent_id);
+            }
+          }
+        }
       }
     };
     window.addEventListener("reclaw:navigate", handler);
