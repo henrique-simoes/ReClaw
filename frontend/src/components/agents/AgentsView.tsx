@@ -79,8 +79,8 @@ function HeartbeatDot({ status, isActive, size = "sm" }: { status: HeartbeatStat
     stopped: "bg-slate-400",
   };
 
-  // Active agents that haven't reported heartbeat yet default to green
-  const effectiveStatus = colors[status] ? status : (isActive ? "healthy" : "stopped");
+  // Active agents with "stopped" heartbeat (no heartbeat sent yet) should show green
+  const effectiveStatus = (isActive && (status === "stopped" || !colors[status])) ? "healthy" : (colors[status] ? status : "stopped");
   const color = colors[effectiveStatus] || "bg-green-500";
 
   return (
