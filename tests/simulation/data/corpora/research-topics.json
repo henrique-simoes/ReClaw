@@ -1,0 +1,90 @@
+[
+  {
+    "topic": "Onboarding Redesign",
+    "goal": "Reduce 45% drop-off at phone verification step",
+    "questions": [
+      "What was your first impression when you signed up?",
+      "Where did you get stuck during the process?",
+      "How did the verification step feel compared to other services?",
+      "What would have made the sign-up faster for you?",
+      "At what point did you feel confident you could use the product?"
+    ]
+  },
+  {
+    "topic": "Dashboard Usability",
+    "goal": "Improve time-to-insight from average 4.2 minutes to under 2 minutes",
+    "questions": [
+      "Walk me through how you typically start your day with the dashboard.",
+      "What information do you look for first?",
+      "How easy is it to find the metrics that matter most to you?",
+      "Have you ever missed something important because it was hard to find?",
+      "If you could rearrange the dashboard, what would you change?"
+    ]
+  },
+  {
+    "topic": "Mobile Experience Audit",
+    "goal": "Understand why mobile session duration is 60% shorter than desktop",
+    "questions": [
+      "When do you typically use the mobile app versus the desktop version?",
+      "What tasks do you try to complete on mobile?",
+      "What feels harder to do on your phone compared to your computer?",
+      "Are there features you avoid using on mobile entirely?",
+      "How does the mobile app fit into your workflow throughout the day?"
+    ]
+  },
+  {
+    "topic": "Search and Navigation Overhaul",
+    "goal": "Reduce support tickets related to 'can't find feature' by 35%",
+    "questions": [
+      "How do you usually find what you need in the product?",
+      "Can you show me a time when you searched for something and it didn't work?",
+      "What do you do when you can't find a feature you know exists?",
+      "How would you describe the navigation structure to a new colleague?",
+      "What labels or terms feel confusing or unclear to you?"
+    ]
+  },
+  {
+    "topic": "Collaboration Features",
+    "goal": "Increase team workspace adoption from 23% to 50% of active accounts",
+    "questions": [
+      "How does your team currently collaborate on projects?",
+      "What tools do you use alongside our product for team communication?",
+      "What stops you from using the shared workspace features more often?",
+      "Can you describe a situation where collaborating in the product went well?",
+      "What would make it easier to get your whole team on board?"
+    ]
+  },
+  {
+    "topic": "Pricing Page Conversion",
+    "goal": "Increase free-to-paid conversion rate from 3.1% to 5%",
+    "questions": [
+      "What was your understanding of the pricing tiers before you signed up?",
+      "What made you choose the plan you're currently on?",
+      "Was there anything confusing about how features are split across plans?",
+      "At what point did you decide the free plan wasn't enough?",
+      "How does our pricing compare to your expectations?"
+    ]
+  },
+  {
+    "topic": "Notification and Alerts System",
+    "goal": "Decrease notification opt-out rate from 68% to under 40%",
+    "questions": [
+      "How do you feel about the number of notifications you receive?",
+      "Which notifications are actually useful to you?",
+      "Have you ever missed something important because you turned notifications off?",
+      "How do you manage notifications across all the tools you use?",
+      "What would the ideal notification system look like for you?"
+    ]
+  },
+  {
+    "topic": "Data Export and Reporting",
+    "goal": "Reduce average report generation time and eliminate top 3 export errors",
+    "questions": [
+      "How often do you need to export data or create reports?",
+      "Who are the reports typically for, and what format do they expect?",
+      "Walk me through the last time you tried to generate a report.",
+      "Have you ever run into errors or unexpected results during export?",
+      "What information do you wish was easier to pull out of the system?"
+    ]
+  }
+]

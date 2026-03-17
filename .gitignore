@@ -36,6 +36,7 @@ docker-compose.override.yml
 
 # Data
 data/
+!tests/simulation/data/
 *.db
 *.sqlite
 *.sqlite3
@@ -53,3 +54,4 @@ coverage/
 
 # Build
 *.log
+tests/simulation/.results/

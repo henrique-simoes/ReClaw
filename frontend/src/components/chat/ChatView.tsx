@@ -232,6 +232,7 @@ export default function ChatView() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || streaming}
+            aria-label="Send message"
             className={cn(
               "p-2.5 rounded-lg transition-colors",
               input.trim() && !streaming

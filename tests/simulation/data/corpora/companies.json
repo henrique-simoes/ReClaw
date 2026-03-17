@@ -1,0 +1,37 @@
+[
+  {
+    "name": "TechStart Inc",
+    "industry": "B2B SaaS",
+    "product": "Project management platform",
+    "target": "Mid-market teams (50-500 employees)",
+    "culture": "Data-driven, move fast, user-centric"
+  },
+  {
+    "name": "HealthBridge",
+    "industry": "Healthcare Technology",
+    "product": "Patient portal and telehealth platform",
+    "target": "Regional hospitals and clinic networks",
+    "culture": "Compliance-first, patient safety focused, methodical"
+  },
+  {
+    "name": "FinLedger",
+    "industry": "Financial Services",
+    "product": "Expense management and invoicing tool",
+    "target": "Small businesses and freelancers (1-50 people)",
+    "culture": "Trust and transparency, precision-oriented, conservative rollouts"
+  },
+  {
+    "name": "EduVerse",
+    "industry": "EdTech",
+    "product": "Collaborative learning management system",
+    "target": "K-12 schools and university departments",
+    "culture": "Accessibility-first, teacher-empowering, iterative design"
+  },
+  {
+    "name": "ShipRoute Global",
+    "industry": "Logistics & Supply Chain",
+    "product": "Fleet tracking and route optimization dashboard",
+    "target": "Enterprise logistics operators (500+ vehicles)",
+    "culture": "Reliability above all, ops-driven, deeply analytical"
+  }
+]

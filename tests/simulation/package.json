@@ -1,0 +1,14 @@
+{
+  "name": "reclaw-simulation",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:headed": "node run.mjs --headless=false",
+    "test:scenario": "node run.mjs --scenario"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.9.0",
+    "playwright": "^1.45.0"
+  }
+}
