@@ -123,6 +123,7 @@ async function loadScenarios() {
     "07-findings-chain",
     "08-kanban-workflow",
     "09-navigation-search",
+    "10-agent-architecture",
     "10-settings-models",
     "11-agents-system",
     "12-chat-sessions",

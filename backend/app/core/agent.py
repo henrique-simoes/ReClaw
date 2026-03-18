@@ -219,6 +219,15 @@ class AgentOrchestrator:
             await self._execute_general_task(db, task, project)
             return
 
+        # Check per-agent skill ACL
+        if not await self._check_agent_skill_acl(task.agent_id, skill.name):
+            logger.warning(f"Agent {task.agent_id} not allowed to use skill {skill.name}")
+            task.agent_notes = f"Skill '{skill.name}' not allowed for this agent."
+            task.status = TaskStatus.BACKLOG
+            await db.commit()
+            await broadcast_agent_status("warning", f"Skill blocked: {skill.name} not in agent ACL")
+            return
+
         # Build skill input
         skill_input = SkillInput(
             project_id=project.id,
@@ -383,6 +392,31 @@ class AgentOrchestrator:
                     return skill
 
         return None
+
+    async def _check_agent_skill_acl(self, agent_id: str | None, skill_name: str) -> bool:
+        """Check if an agent is allowed to use a skill. Returns True if allowed."""
+        if not agent_id or agent_id == "reclaw-main":
+            return True  # Main agent can use all skills
+
+        try:
+            async with async_session() as db:
+                result = await db.execute(
+                    select(Agent).where(Agent.id == agent_id)
+                )
+                agent = result.scalar_one_or_none()
+                if not agent:
+                    return True  # Unknown agent — allow
+
+                caps = json.loads(agent.capabilities) if agent.capabilities else []
+                # If agent has "skill_execution" capability but no explicit allowed_skills
+                # in memory, allow all skills
+                memory = json.loads(agent.memory) if agent.memory else {}
+                allowed = memory.get("allowed_skills")
+                if allowed is None:
+                    return True  # No ACL = allow all
+                return skill_name in allowed
+        except Exception:
+            return True  # On error, allow
 
     async def _execute_general_task(self, db: AsyncSession, task: Task, project: Project) -> None:
         """Handle tasks without a specific skill — use general LLM reasoning."""

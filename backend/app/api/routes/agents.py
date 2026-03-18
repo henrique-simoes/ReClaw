@@ -107,6 +107,12 @@ async def create_agent(data: CreateAgentRequest, db: AsyncSession = Depends(get_
         await ws_manager.broadcast("agent_created", agent)
     except Exception:
         pass
+    # Start the custom agent's work loop
+    try:
+        from app.agents.custom_worker import start_custom_agent
+        await start_custom_agent(agent["id"], agent["name"])
+    except Exception:
+        pass
     return agent
 
 
@@ -134,6 +140,12 @@ async def update_agent(agent_id: str, data: UpdateAgentRequest, db: AsyncSession
 @router.delete("/agents/{agent_id}", status_code=204)
 async def delete_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     """Soft-delete an agent."""
+    # Stop custom agent worker if running
+    try:
+        from app.agents.custom_worker import stop_custom_agent
+        await stop_custom_agent(agent_id)
+    except Exception:
+        pass
     if not await agent_service.delete_agent(db, agent_id):
         raise HTTPException(status_code=404, detail="Agent not found or is a system agent")
 
