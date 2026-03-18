@@ -683,8 +683,12 @@ class AgentOrchestrator:
                 )
                 db.add(task)
 
-                # Store findings
-                await self._store_findings(db, project_id, output, task)
+                # Store findings (non-fatal — embedding/vector errors shouldn't block skill output)
+                try:
+                    await self._store_findings(db, project_id, output, task)
+                except Exception as store_err:
+                    logger.warning(f"Failed to store findings for {skill_name}: {store_err}")
+                    await db.commit()  # Commit the task even if findings storage fails
 
                 skill_manager.record_execution(skill_name, output.success, 0.8 if output.success else 0.2)
 

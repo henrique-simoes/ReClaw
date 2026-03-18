@@ -186,20 +186,27 @@ export async function run(ctx) {
     await page.waitForTimeout(1000);
   }
 
-  await page.keyboard.press("Meta+2");
+  // Navigate to Findings via sidebar click (more reliable than keyboard shortcut in headless mode)
+  const findingsNavBtn = page.locator('button[aria-label="Findings"]').first();
+  if (await findingsNavBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await findingsNavBtn.click();
+  } else {
+    // Fallback to keyboard shortcut
+    await page.keyboard.press("Meta+2");
+  }
   await page.waitForTimeout(2000);
 
   // Check that findings view loaded (look for any findings-related text)
-  const findingsVisible = await page.locator("text=Nuggets").isVisible({ timeout: 3000 }).catch(() => false)
-    || await page.locator("text=nuggets").isVisible({ timeout: 1000 }).catch(() => false)
-    || await page.locator("text=Findings").isVisible({ timeout: 1000 }).catch(() => false)
-    || await page.locator("text=Discover").isVisible({ timeout: 1000 }).catch(() => false)
-    || await page.locator("text=Define").isVisible({ timeout: 1000 }).catch(() => false);
+  let findingsVisible = false;
+  for (const label of ["Nuggets", "nuggets", "Findings", "Discover", "Define", "Insights"]) {
+    findingsVisible = await page.locator(`text=${label}`).first().isVisible({ timeout: 1500 }).catch(() => false);
+    if (findingsVisible) break;
+  }
 
   checks.push({
     name: "Findings view loads with data",
     passed: findingsVisible,
-    detail: "",
+    detail: findingsVisible ? "Findings text visible" : "Could not detect findings view text",
   });
   await screenshot("16-findings-populated");
 

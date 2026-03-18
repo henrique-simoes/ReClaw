@@ -203,5 +203,34 @@ def _create_llm_client():
     return OllamaClient()
 
 
+async def auto_detect_provider() -> None:
+    """Auto-detect and switch to whichever LLM provider is reachable.
+
+    Tries the configured provider first, then falls back to the other.
+    Updates settings.llm_provider and recreates the global client singleton.
+    """
+    import app.core.ollama as self_module
+    from app.core.lmstudio import LMStudioClient
+
+    # Try configured provider first
+    if await self_module.ollama.health():
+        return  # Already working
+
+    # Try the other provider
+    if settings.llm_provider == "lmstudio":
+        fallback = OllamaClient()
+        fallback_name = "ollama"
+    else:
+        fallback = LMStudioClient()
+        fallback_name = "lmstudio"
+
+    if await fallback.health():
+        settings.llm_provider = fallback_name
+        self_module.ollama = fallback
+        print(f"Auto-detected LLM provider: {fallback_name}")
+    else:
+        await fallback.close()
+
+
 # Singleton instance — provider chosen by LLM_PROVIDER env var
 ollama = _create_llm_client()

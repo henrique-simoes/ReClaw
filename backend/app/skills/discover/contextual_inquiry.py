@@ -41,10 +41,14 @@ Format as Markdown."""
         from pathlib import Path
 
         all_text = []
-        for f in skill_input.files:
+        for f in (skill_input.files or []):
             result = process_file(Path(f))
             if not result.error and result.chunks:
                 all_text.append("\n".join(c.text for c in result.chunks))
+
+        # Fallback: use user_context as inline observation data
+        if not all_text and skill_input.user_context:
+            all_text.append(skill_input.user_context)
 
         if not all_text:
             return SkillOutput(success=False, summary="No observation notes provided.", errors=["Provide observation note files."])

@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     rag_chunk_size: int = 512
     rag_chunk_overlap: int = 50
     rag_top_k: int = 5
-    rag_score_threshold: float = 0.7
+    rag_score_threshold: float = 0.3
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

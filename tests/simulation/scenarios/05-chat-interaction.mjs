@@ -41,8 +41,24 @@ export async function run(ctx) {
   }
 
   // Message 1: Ask about research data
-  await chatInput.fill("What are the main pain points mentioned in the interview transcripts?");
   const sendBtn = page.locator('button[aria-label="Send message"]').first();
+
+  // Type into textarea and wait for React state to update before clicking send.
+  // Use page.type() instead of fill() for more realistic keystroke events,
+  // then wait for the send button to become enabled (not cursor-not-allowed).
+  await chatInput.fill("What are the main pain points mentioned in the interview transcripts?");
+  await page.waitForTimeout(500);
+
+  // Retry: if send button is still disabled, click the textarea and re-type
+  const sendEnabled = await sendBtn.evaluate((btn) => !btn.disabled);
+  if (!sendEnabled) {
+    await chatInput.click();
+    await chatInput.fill("");
+    await page.waitForTimeout(200);
+    await chatInput.type("What are the main pain points mentioned in the interview transcripts?");
+    await page.waitForTimeout(500);
+  }
+
   await sendBtn.click();
 
   // Wait for response (streaming)
@@ -65,6 +81,15 @@ export async function run(ctx) {
 
   // Message 2: Trigger a skill
   await chatInput.fill("Run a thematic analysis on the interview data");
+  await page.waitForTimeout(500);
+  const send2Enabled = await sendBtn.evaluate((btn) => !btn.disabled);
+  if (!send2Enabled) {
+    await chatInput.click();
+    await chatInput.fill("");
+    await page.waitForTimeout(200);
+    await chatInput.type("Run a thematic analysis on the interview data");
+    await page.waitForTimeout(500);
+  }
   await sendBtn.click();
   try {
     await page.waitForTimeout(3000);

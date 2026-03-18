@@ -69,6 +69,16 @@ const apiClient = {
     if (!res.ok) throw new Error(`Upload ${fileName}: ${res.status}`);
     return res.json();
   },
+  async uploadContent(projectId, content, fileName) {
+    const formData = new FormData();
+    formData.append("file", new Blob([content], { type: "text/plain" }), fileName);
+    const res = await fetch(`${API_BASE}/api/files/upload/${projectId}`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error(`Upload ${fileName}: ${res.status}`);
+    return res.json();
+  },
 };
 
 // ── Data Generators ─────────────────────────────────────────
@@ -134,6 +144,9 @@ async function loadScenarios() {
     "17-full-pipeline",
     "18-task-verification",
     "19-file-preview",
+    "20-all-skills-comprehensive",
+    "21-agent-work-simulation",
+    "22-architecture-evaluation",
   ];
 
   const scenarios = [];
@@ -375,6 +388,25 @@ async function main() {
   const scenarios = await loadScenarios();
   const evaluators = skipEval ? [] : await loadEvaluators();
 
+  // Save current model and switch to fast model for simulation tests
+  const SIM_MODEL = process.env.SIM_MODEL || "gemma-3-1b-it-qat";
+  let originalModel = null;
+  try {
+    const modelsRes = await fetch(`${API_BASE}/api/settings/models`);
+    if (modelsRes.ok) {
+      const modelsData = await modelsRes.json();
+      originalModel = modelsData.active_model;
+    }
+    const switchRes = await fetch(`${API_BASE}/api/settings/model?model_name=${encodeURIComponent(SIM_MODEL)}`, { method: "POST" });
+    if (switchRes.ok) {
+      console.log(`  Model switched to ${SIM_MODEL} for simulation (was: ${originalModel || "unknown"})`);
+    } else {
+      console.log(`  Model switch to ${SIM_MODEL} failed (${switchRes.status}), using current model`);
+    }
+  } catch (e) {
+    console.log(`  Model switch skipped: ${e.message}`);
+  }
+
   // Context shared across scenarios
   const ctx = {
     api: apiClient,
@@ -447,6 +479,18 @@ async function main() {
       console.log(`  - ${i.title} (${i.source})`);
     }
     console.log();
+  }
+
+  // Restore original model after simulation
+  if (originalModel && originalModel !== SIM_MODEL) {
+    try {
+      const restoreRes = await fetch(`${API_BASE}/api/settings/model?model_name=${encodeURIComponent(originalModel)}`, { method: "POST" });
+      if (restoreRes.ok) {
+        console.log(`  Model restored to ${originalModel}`);
+      }
+    } catch {
+      console.log(`  Could not restore model to ${originalModel}`);
+    }
   }
 
   process.exit(totalFailed > 0 ? 1 : 0);

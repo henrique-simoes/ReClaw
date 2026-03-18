@@ -235,14 +235,7 @@ class UserInterviewsSkill(BaseSkill):
                 suggestions=plan["steps"],
             )
 
-        # Analyze mode — process transcript files
-        if not skill_input.files:
-            return SkillOutput(
-                success=False,
-                summary="No files provided for analysis.",
-                errors=["Please provide interview transcript files."],
-            )
-
+        # Analyze mode — process transcript files or inline context
         context_parts = []
         if skill_input.project_context:
             context_parts.append(skill_input.project_context)
@@ -252,12 +245,22 @@ class UserInterviewsSkill(BaseSkill):
             context_parts.append(skill_input.user_context)
         context = "\n".join(context_parts) if context_parts else "No context."
 
+        if not skill_input.files and not skill_input.user_context:
+            return SkillOutput(
+                success=False,
+                summary="No files provided for analysis.",
+                errors=["Please provide interview transcript files."],
+            )
+
         # Process each transcript
         all_analyses = []
         all_nuggets = []
         all_errors = []
 
-        for file_path_str in skill_input.files:
+        # If files provided, process them; otherwise use inline user_context as transcript
+        transcripts_to_analyze = []
+
+        for file_path_str in (skill_input.files or []):
             file_path = Path(file_path_str)
             if not file_path.exists():
                 all_errors.append(f"File not found: {file_path_str}")
@@ -269,12 +272,26 @@ class UserInterviewsSkill(BaseSkill):
                 all_errors.append(f"Error processing {file_path.name}: {processed.error}")
                 continue
 
-            transcript = "\n".join(chunk.text for chunk in processed.chunks)
+            transcripts_to_analyze.append("\n".join(chunk.text for chunk in processed.chunks))
+
+        # Fallback: if no file transcripts, use user_context as inline data
+        if not transcripts_to_analyze and skill_input.user_context:
+            transcripts_to_analyze.append(skill_input.user_context)
+
+        # Track source names for each transcript
+        transcript_sources = []
+        for file_path_str in (skill_input.files or []):
+            transcript_sources.append(Path(file_path_str).name)
+        if not transcript_sources and skill_input.user_context:
+            transcript_sources.append("inline-context")
+
+        for idx, transcript in enumerate(transcripts_to_analyze):
+            source_name = transcript_sources[idx] if idx < len(transcript_sources) else f"transcript-{idx}"
 
             # Analyze the transcript
             prompt = TRANSCRIPT_ANALYSIS_PROMPT.format(
                 context=context,
-                transcript=transcript[:8000],  # Limit transcript length for context window
+                transcript=transcript[:4000],  # Limit transcript length for context window
             )
 
             response = await ollama.chat(
@@ -296,14 +313,14 @@ class UserInterviewsSkill(BaseSkill):
             except json.JSONDecodeError:
                 analysis = {"raw_analysis": response_text}
 
-            analysis["source_file"] = file_path.name
+            analysis["source_file"] = source_name
             all_analyses.append(analysis)
 
             # Extract nuggets
             for nugget_data in analysis.get("nuggets", []):
                 all_nuggets.append({
                     "text": nugget_data.get("text", ""),
-                    "source": file_path.name,
+                    "source": source_name,
                     "source_location": nugget_data.get("location", ""),
                     "tags": nugget_data.get("tags", []),
                 })

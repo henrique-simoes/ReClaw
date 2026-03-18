@@ -30,10 +30,14 @@ analysis approach, and dropout mitigation strategies. Format as Markdown."""
 
     async def execute(self, skill_input: SkillInput) -> SkillOutput:
         texts = []
-        for f in skill_input.files:
+        for f in (skill_input.files or []):
             r = process_file(Path(f))
             if not r.error and r.chunks:
                 texts.append("\n".join(c.text for c in r.chunks))
+
+        # Fallback: use user_context as inline diary data
+        if not texts and skill_input.user_context:
+            texts.append(skill_input.user_context)
 
         if not texts:
             return SkillOutput(success=False, summary="No diary entries provided.", errors=["Upload diary entry files."])

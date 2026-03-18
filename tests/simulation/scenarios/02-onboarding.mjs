@@ -9,17 +9,15 @@ export async function run(ctx) {
   const { api, page, screenshot } = ctx;
   const checks = [];
 
-  // Clean up any previous simulation project
+  // Clean up ALL projects so the onboarding wizard triggers (it appears only when 0 projects exist)
   const existing = await api.get("/api/projects");
   for (const p of existing) {
-    if (p.name.startsWith("[SIM]")) {
-      await api.delete(`/api/projects/${p.id}`);
-    }
+    await api.delete(`/api/projects/${p.id}`);
   }
 
   // Navigate to home — should trigger onboarding if no projects
   await page.goto("http://localhost:3000", { waitUntil: "networkidle", timeout: 15000 });
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(3000);
 
   // Check if onboarding wizard appeared
   const wizardVisible = await page.locator("text=Welcome to ReClaw").isVisible().catch(() => false);

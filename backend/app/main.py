@@ -47,19 +47,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     channel_router.register(SlackAdapter())
     channel_router.register(TelegramAdapter())
 
-    # Check LLM provider connectivity and auto-pull if using Ollama
+    # Auto-detect LLM provider: try configured first, fall back to the other
     import logging
     _log = logging.getLogger(__name__)
-    from app.core.ollama import ollama
+    from app.core.ollama import ollama, auto_detect_provider
     try:
-        if await ollama.health():
+        await auto_detect_provider()
+        # Re-import after potential provider switch
+        from app.core import ollama as ollama_mod
+        current_client = ollama_mod.ollama
+        if await current_client.health():
             _log.info(f"LLM provider ({app_settings.llm_provider}) is online.")
             if app_settings.llm_provider == "ollama":
-                models = await ollama.list_models()
+                models = await current_client.list_models()
                 model_names = [m.get("name", "") for m in models]
                 if not any(app_settings.ollama_model in n for n in model_names):
                     _log.info(f"Pulling default model: {app_settings.ollama_model}")
-                    async for _ in ollama.pull_model(app_settings.ollama_model):
+                    async for _ in current_client.pull_model(app_settings.ollama_model):
                         pass
         else:
             _log.warning(f"LLM provider ({app_settings.llm_provider}) is not reachable.")

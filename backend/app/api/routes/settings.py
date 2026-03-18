@@ -133,8 +133,19 @@ async def switch_provider(provider: str):
 
 @router.get("/settings/status")
 async def system_status():
-    """Get overall system status."""
+    """Get overall system status.
+
+    Auto-detects provider if the current one is unreachable.
+    """
+    from app.core.ollama import auto_detect_provider
+    import app.core.ollama as ollama_mod
+
     llm_healthy = await ollama.health()
+
+    # If current provider is down, try auto-detecting the other
+    if not llm_healthy:
+        await auto_detect_provider()
+        llm_healthy = await ollama_mod.ollama.health()
 
     return {
         "status": "healthy" if llm_healthy else "degraded",

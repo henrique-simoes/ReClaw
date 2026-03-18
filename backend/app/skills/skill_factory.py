@@ -17,7 +17,7 @@ from app.core.file_processor import process_file
 from app.skills.base import BaseSkill, SkillInput, SkillOutput, SkillPhase, SkillType
 
 
-def _extract_text_from_files(files: list[str], max_chars: int = 8000) -> str:
+def _extract_text_from_files(files: list[str], max_chars: int = 4000) -> str:
     """Extract text from input files."""
     texts = []
     total = 0
@@ -95,19 +95,24 @@ def create_skill(
             source_label = ", ".join(file_sources[:3]) if file_sources else self.name
 
             ctx = "\n".join(filter(None, [skill_input.company_context, skill_input.project_context, skill_input.user_context]))
-            full_prompt = execute_prompt.format(context=ctx or "N/A", content=content or skill_input.user_context or "N/A")
+            data_content = content or (skill_input.user_context or "N/A")[:4000]
+            full_prompt = execute_prompt.format(context=(ctx or "N/A")[:2000], content=data_content)
             full_prompt += f"\n\nRespond in JSON:\n{output_schema}"
 
             resp = await ollama.chat(messages=[{"role": "user", "content": full_prompt}], temperature=0.3)
             data = _parse_json_response(resp.get("message", {}).get("content", ""))
 
+            # Normalize findings — handle both dict and string items from LLM
+            def _as_dict(item, default_key="text"):
+                return item if isinstance(item, dict) else {default_key: str(item)}
+
             # Use source from LLM if provided, fall back to file name(s), then skill name
-            nuggets = [{"text": n.get("text", ""), "source": n.get("source", source_label), "tags": n.get("tags", [])}
+            nuggets = [{"text": _as_dict(n).get("text", str(n)), "source": _as_dict(n).get("source", source_label), "tags": _as_dict(n).get("tags", [])}
                        for n in data.get("nuggets", [])]
-            facts = [{"text": f.get("text", "")} for f in data.get("facts", [])]
-            insights = [{"text": i.get("text", ""), "confidence": i.get("confidence", "medium")}
+            facts = [{"text": _as_dict(f).get("text", str(f))} for f in data.get("facts", [])]
+            insights = [{"text": _as_dict(i).get("text", str(i)), "confidence": _as_dict(i).get("confidence", "medium")}
                         for i in data.get("insights", [])]
-            recommendations = [{"text": r.get("text", ""), "priority": r.get("priority", "medium")}
+            recommendations = [{"text": _as_dict(r).get("text", str(r)), "priority": _as_dict(r).get("priority", "medium")}
                                for r in data.get("recommendations", [])]
 
             return SkillOutput(
