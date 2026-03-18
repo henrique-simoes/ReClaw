@@ -9,10 +9,12 @@ export async function run(ctx) {
   const { api, page, screenshot } = ctx;
   const checks = [];
 
-  // Clean up ALL projects so the onboarding wizard triggers (it appears only when 0 projects exist)
+  // Clean up only SIM projects from prior runs (don't delete user projects)
   const existing = await api.get("/api/projects");
   for (const p of existing) {
-    await api.delete(`/api/projects/${p.id}`);
+    if (p.name?.startsWith("[SIM]") || p.name?.startsWith("[SIM-")) {
+      await api.delete(`/api/projects/${p.id}`);
+    }
   }
 
   // Navigate to home — should trigger onboarding if no projects

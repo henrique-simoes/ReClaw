@@ -1,9 +1,12 @@
 """WebSocket endpoint for real-time agent status updates."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -135,7 +138,7 @@ async def broadcast_suggestion(message: str, project_id: str, action: str = "") 
     })
 
 
-async def broadcast_resource_throttle(reason: str, resources: dict | None = None) -> None:
+async def broadcast_resource_throttle(reason: str, resources: Optional[dict] = None) -> None:
     """Broadcast a resource throttle event (agent paused due to hardware)."""
     await manager.broadcast("resource_throttle", {
         "reason": reason,

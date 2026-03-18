@@ -23,6 +23,7 @@ const args = process.argv.slice(2);
 const headless = !args.includes("--headless=false");
 const singleScenario = args.includes("--scenario") ? args[args.indexOf("--scenario") + 1] : null;
 const skipEval = args.includes("--skip-eval");
+const skipSkills = args.includes("--skip-skills");
 
 const API_BASE = "http://localhost:8000";
 const FRONTEND = "http://localhost:3000";
@@ -151,6 +152,8 @@ async function loadScenarios() {
 
   const scenarios = [];
   for (const file of scenarioFiles) {
+    // --skip-skills omits the long-running all-skills comprehensive test
+    if (skipSkills && file === "20-all-skills-comprehensive") continue;
     try {
       const mod = await import(`./scenarios/${file}.mjs`);
       scenarios.push({ id: mod.id || file, name: mod.name || file, run: mod.run });
