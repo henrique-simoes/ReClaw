@@ -14,6 +14,7 @@ import VersionHistory from "@/components/common/VersionHistory";
 import SettingsView from "@/components/common/SettingsView";
 import SkillsView from "@/components/skills/SkillsView";
 import AgentsView from "@/components/agents/AgentsView";
+import MemoryView from "@/components/memory/MemoryView";
 import SearchModal from "@/components/common/SearchModal";
 import ToastNotification from "@/components/common/ToastNotification";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
@@ -91,7 +92,7 @@ export default function HomeClient() {
 
   // Global Cmd+K for search
   useEffect(() => {
-    const viewKeys: Record<string, string> = { "1": "chat", "2": "findings", "3": "tasks", "4": "interviews", "5": "context", "6": "skills", "7": "agents" };
+    const viewKeys: Record<string, string> = { "1": "chat", "2": "findings", "3": "tasks", "4": "interviews", "5": "context", "6": "skills", "7": "agents", "8": "memory" };
 
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -137,6 +138,7 @@ export default function HomeClient() {
       case "context": return <ContextEditor />;
       case "skills": return <SkillsView />;
       case "agents": return <AgentsView />;
+      case "memory": return <MemoryView />;
       case "history": return <VersionHistory />;
       case "settings": return <SettingsView />;
       default: return <ChatView />;

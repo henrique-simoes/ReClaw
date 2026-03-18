@@ -1,7 +1,10 @@
 """File processing pipeline — extract text and chunk documents."""
 
+from __future__ import annotations
+
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -92,11 +95,134 @@ def chunk_text(
     return chunks
 
 
+# ---------------------------------------------------------------------------
+# Content-aware chunking
+# ---------------------------------------------------------------------------
+
+_SPEAKER_PATTERN = re.compile(
+    r"^(?:Interviewer|Participant|Moderator|Respondent|Speaker\s*\d*"
+    r"|P\d+|Q|A|\[Speaker[^\]]*\])\s*:",
+    re.MULTILINE,
+)
+_TIMESTAMP_PATTERN = re.compile(r"\[\d{2}:\d{2}")
+
+
+def detect_content_type(text: str, suffix: str) -> str:
+    """Detect the content type of *text* to choose a chunking strategy.
+
+    Returns one of: ``"interview_transcript"``, ``"csv_data"``,
+    ``"markdown_sections"``, or ``"generic"``.
+    """
+    if suffix == ".csv":
+        return "csv_data"
+
+    # Interview transcript: speaker-turn patterns or timestamps, with
+    # multiple speaker turns.
+    speaker_turns = _SPEAKER_PATTERN.findall(text)
+    has_timestamps = bool(_TIMESTAMP_PATTERN.search(text))
+    if len(speaker_turns) >= 3 or (has_timestamps and len(speaker_turns) >= 2):
+        return "interview_transcript"
+
+    if suffix == ".md" and len(re.findall(r"^##\s", text, re.MULTILINE)) >= 3:
+        return "markdown_sections"
+
+    return "generic"
+
+
+def chunk_by_speaker_turn(text: str, source: str) -> list[TextChunk]:
+    """Split interview-style text on speaker turn boundaries.
+
+    Very short consecutive turns (< 100 chars) are merged into one chunk.
+    """
+    # Split on lines that start with a speaker label
+    parts = re.split(r"(?=^(?:Interviewer|Participant|Moderator|Respondent|Speaker\s*\d*"
+                     r"|P\d+|Q|A|\[Speaker[^\]]*\])\s*:)", text, flags=re.MULTILINE)
+    parts = [p.strip() for p in parts if p.strip()]
+
+    # Merge short consecutive turns
+    merged: list[str] = []
+    buf = ""
+    for part in parts:
+        if buf and len(buf) + len(part) < 100:
+            buf = buf + "\n" + part
+        else:
+            if buf:
+                merged.append(buf)
+            buf = part
+    if buf:
+        merged.append(buf)
+
+    max_size = settings.rag_chunk_size
+    chunks: list[TextChunk] = []
+    position = 0
+    for segment in merged:
+        # If a single turn exceeds max chunk size, fall back to character chunking
+        if len(segment) > max_size:
+            sub_chunks = chunk_text(segment, source=source, chunk_size=max_size)
+            for sc in sub_chunks:
+                sc.chunk_type = "speaker_turn"
+                sc.position = position
+                position += 1
+                chunks.append(sc)
+        else:
+            chunks.append(TextChunk(
+                text=segment,
+                source=source,
+                position=position,
+                chunk_type="speaker_turn",
+            ))
+            position += 1
+
+    return chunks
+
+
+def chunk_by_heading(text: str, source: str) -> list[TextChunk]:
+    """Split markdown text by ``##`` headings.
+
+    Sections that exceed the max chunk size are sub-chunked using character
+    chunking.
+    """
+    # Split keeping the heading with its section
+    sections = re.split(r"(?=^##\s)", text, flags=re.MULTILINE)
+    sections = [s.strip() for s in sections if s.strip()]
+
+    max_size = settings.rag_chunk_size
+    chunks: list[TextChunk] = []
+    position = 0
+    for section in sections:
+        if len(section) > max_size:
+            sub_chunks = chunk_text(section, source=source, chunk_size=max_size)
+            for sc in sub_chunks:
+                sc.chunk_type = "heading_section"
+                sc.position = position
+                position += 1
+                chunks.append(sc)
+        else:
+            chunks.append(TextChunk(
+                text=section,
+                source=source,
+                position=position,
+                chunk_type="heading_section",
+            ))
+            position += 1
+
+    return chunks
+
+
 def process_txt(file_path: Path) -> ProcessedFile:
-    """Process a plain text or markdown file."""
+    """Process a plain text or markdown file with content-aware chunking."""
     try:
         text = file_path.read_text(encoding="utf-8", errors="replace")
-        chunks = chunk_text(text, source=str(file_path))
+        suffix = file_path.suffix.lower()
+        content_type = detect_content_type(text, suffix)
+
+        if content_type == "interview_transcript":
+            chunks = chunk_by_speaker_turn(text, source=str(file_path))
+        elif content_type == "markdown_sections":
+            chunks = chunk_by_heading(text, source=str(file_path))
+        else:
+            chunks = chunk_text(text, source=str(file_path))
+
         return ProcessedFile(
             source=str(file_path),
             chunks=chunks,

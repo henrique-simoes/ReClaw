@@ -270,6 +270,61 @@ export const projectExport = {
   export: (projectId: string) => post<{ exported: boolean; path: string; files_count: number }>(`/api/projects/${projectId}/export`, {}),
 };
 
+// --- Memory ---
+
+export const memory = {
+  list: (projectId: string, page = 1, pageSize = 50) =>
+    get<{
+      chunks: Array<{
+        text: string;
+        source: string;
+        page: number;
+        agent_id: string;
+        chunk_type: string;
+        created_at: number;
+        confidence: number;
+      }>;
+      total: number;
+      page: number;
+      page_size: number;
+      sources?: Array<{ name: string; count: number }>;
+      error?: string;
+    }>(`/api/memory/${projectId}?page=${page}&page_size=${pageSize}`),
+  search: (projectId: string, query: string, topK = 20) =>
+    get<{
+      results: Array<{
+        text: string;
+        source: string;
+        score: number;
+        page: number | null;
+      }>;
+      query: string;
+      total: number;
+    }>(`/api/memory/${projectId}/search?query=${encodeURIComponent(query)}&top_k=${topK}`),
+  stats: (projectId: string) =>
+    get<{
+      vector_chunks: number;
+      keyword_chunks: number;
+      sources: Array<{ name: string; chunk_count: number }>;
+      embedding_model: string;
+      vector_dimensions: number;
+      chunk_size: number;
+      chunk_overlap: number;
+      hybrid_weights: { vector: number; keyword: number };
+    }>(`/api/memory/${projectId}/stats`),
+  agentNotes: (projectId: string, agentId: string) =>
+    get<{
+      agent_id: string;
+      project_id: string;
+      notes: Array<{ text: string; source: string }>;
+    }>(`/api/memory/${projectId}/agent/${agentId}/notes`),
+  deleteSource: (projectId: string, sourceName: string) =>
+    request<{ deleted: boolean; source: string }>(
+      `/api/memory/${projectId}/source/${encodeURIComponent(sourceName)}`,
+      { method: "DELETE" }
+    ),
+};
+
 // --- Settings ---
 
 export const settings = {

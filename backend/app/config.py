@@ -40,11 +40,16 @@ class Settings(BaseSettings):
     # Context window
     max_context_tokens: int = 8192
 
+    # General data directory
+    data_dir: str = "./data"
+
     # RAG
-    rag_chunk_size: int = 512
-    rag_chunk_overlap: int = 50
+    rag_chunk_size: int = 1200
+    rag_chunk_overlap: int = 180
     rag_top_k: int = 5
     rag_score_threshold: float = 0.3
+    rag_hybrid_vector_weight: float = 0.7
+    rag_hybrid_keyword_weight: float = 0.3
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

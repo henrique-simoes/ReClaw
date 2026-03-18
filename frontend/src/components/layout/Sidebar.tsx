@@ -6,6 +6,7 @@ import {
   Plus,
   Diamond,
   Bot,
+  Brain,
   LayoutDashboard,
   FileText,
   Search,
@@ -62,6 +63,7 @@ export default function Sidebar({ activeView, onViewChange, onSearchOpen }: Side
     { id: "context", icon: FileText, label: "Context" },
     { id: "skills", icon: Wand2, label: "Skills" },
     { id: "agents", icon: Users, label: "Agents" },
+    { id: "memory", icon: Brain, label: "Memory" },
   ];
 
   // Secondary nav: accessible via "More" or header icons

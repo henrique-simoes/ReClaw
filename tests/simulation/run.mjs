@@ -148,6 +148,7 @@ async function loadScenarios() {
     "20-all-skills-comprehensive",
     "21-agent-work-simulation",
     "22-architecture-evaluation",
+    "23-memory-view",
   ];
 
   const scenarios = [];

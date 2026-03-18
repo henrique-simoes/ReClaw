@@ -131,6 +131,13 @@ async def switch_provider(provider: str):
     }
 
 
+@router.get("/settings/vector-health")
+async def vector_health():
+    """Check embedding dimension consistency across vector stores."""
+    from app.core.vector_health import check_embedding_dimensions
+    return await check_embedding_dimensions()
+
+
 @router.get("/settings/status")
 async def system_status():
     """Get overall system status.

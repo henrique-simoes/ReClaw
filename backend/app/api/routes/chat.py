@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.agent import agent
+from app.core.context_summarizer import context_summarizer
 from app.core.ollama import ollama
 from app.core.rag import build_augmented_prompt, retrieve_context
 from app.core.token_counter import context_guard
@@ -258,6 +259,22 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     # Add current message if not already in history
     if not messages or messages[-1]["content"] != request.message:
         messages.append({"role": "user", "content": request.message})
+
+    # --- DAG-based context summarization: summarize older messages ----------
+    try:
+        messages, ctx_summary = await context_summarizer.apply_summarization(
+            system_prompt, messages
+        )
+        if ctx_summary:
+            import logging as _log
+            _log.getLogger(__name__).info(
+                "Context summarized: %d msgs, %d -> %d tokens",
+                ctx_summary.messages_summarized,
+                ctx_summary.original_token_count,
+                ctx_summary.summary_token_count,
+            )
+    except Exception:
+        pass  # Fall through to hard trim on summarization failure
 
     # --- Context window guard: trim history if it would overflow ----------
     messages, trim_summary = context_guard.summarize_if_needed(

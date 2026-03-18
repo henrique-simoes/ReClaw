@@ -256,6 +256,22 @@ class AgentOrchestrator:
             await self._store_findings(db, project.id, output, task)
             await broadcast_task_progress(task.id, 0.7, "Storing findings...")
 
+            # Store key insights in agent memory
+            try:
+                from app.core.agent_memory import agent_memory
+                if hasattr(output, "insights") and output.insights:
+                    for insight in output.insights[:3]:
+                        text = insight.get("text", "") if isinstance(insight, dict) else str(insight)
+                        if text:
+                            await agent_memory.memory_store(
+                                task.agent_id or "reclaw-main",
+                                project.id,
+                                text,
+                                tags=["auto-insight", task.skill_name or "general"],
+                            )
+            except Exception as e:
+                logger.debug(f"Agent memory store skipped: {e}")
+
             # Self-check key insights
             if output.insights:
                 await broadcast_task_progress(task.id, 0.8, "Verifying findings...")

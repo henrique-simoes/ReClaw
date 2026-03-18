@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import agents, audit, channels, chat, codebooks, files, findings, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
+from app.api.routes import agents, audit, channels, chat, codebooks, files, findings, memory, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
 from app.api.websocket import router as ws_router
 from app.channels.base import channel_router
 from app.channels.slack import SlackAdapter
@@ -69,6 +69,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             _log.warning(f"LLM provider ({app_settings.llm_provider}) is not reachable.")
     except Exception:
         pass  # Don't block startup if provider check fails
+
+    # Vector store dimension health check
+    try:
+        from app.core.vector_health import check_embedding_dimensions
+        dim_check = await check_embedding_dimensions()
+        if dim_check["status"] == "mismatch":
+            _log.warning(f"Embedding dimension mismatch: {dim_check['message']}")
+        elif dim_check["status"] == "ok":
+            _log.info(f"Vector dimensions OK ({dim_check['model_dim']}d)")
+    except Exception as e:
+        _log.warning(f"Dimension check skipped: {e}")
 
     # Start file watcher
     watcher = FileWatcher()
@@ -147,6 +158,7 @@ app.include_router(metrics.router, prefix="/api", tags=["Metrics"])
 app.include_router(scheduler_routes.router, prefix="/api", tags=["Schedules"])
 app.include_router(channels.router, prefix="/api", tags=["Channels"])
 app.include_router(sessions.router, prefix="/api", tags=["Sessions"])
+app.include_router(memory.router, prefix="/api", tags=["Memory"])
 app.include_router(ws_router)
 
 
