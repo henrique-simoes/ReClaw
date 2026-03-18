@@ -51,3 +51,4 @@ class Project(Base):
         "Recommendation", back_populates="project", cascade="all, delete-orphan"
     )
     sessions = relationship("ChatSession", back_populates="project", cascade="all, delete-orphan")
+    codebooks = relationship("Codebook", back_populates="project", cascade="all, delete-orphan")

@@ -7,7 +7,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import agents, audit, channels, chat, files, findings, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
+from app.api.routes import agents, audit, channels, chat, codebooks, files, findings, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
 from app.api.websocket import router as ws_router
 from app.channels.base import channel_router
 from app.channels.slack import SlackAdapter
@@ -123,6 +123,7 @@ app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(projects.router, prefix="/api", tags=["Projects"])
 app.include_router(tasks.router, prefix="/api", tags=["Tasks"])
 app.include_router(findings.router, prefix="/api", tags=["Findings"])
+app.include_router(codebooks.router, prefix="/api", tags=["Codebooks"])
 app.include_router(files.router, prefix="/api", tags=["Files"])
 app.include_router(settings.router, prefix="/api", tags=["Settings"])
 app.include_router(audit.router, prefix="/api", tags=["Audit"])

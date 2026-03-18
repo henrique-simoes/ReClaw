@@ -62,5 +62,8 @@ backend/app/skills/definitions/_usage_stats.json
 backend/app/skills/definitions/_proposals.json
 backend/app/skills/definitions/_deleted/
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Exported projects
 ReClaw-Projects/

@@ -199,35 +199,37 @@ export default function ChatSessionsSidebar({ projectId }: ChatSessionsSidebarPr
 
       {/* Sessions list */}
       <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
-        {loading && sessions.length === 0 && (
+        {loading && sessions.length === 0 ? (
           <p className="text-xs text-slate-400 text-center py-4">Loading...</p>
-        )}
-
-        {/* Starred */}
-        {starred.length > 0 && (
+        ) : (
           <>
-            <p className="text-[10px] text-slate-400 uppercase px-2 pt-1 pb-0.5 font-semibold flex items-center gap-1">
-              <Star size={8} className="fill-amber-400 text-amber-400" /> Starred
-            </p>
-            {starred.map(renderSession)}
-            <div className="border-b border-slate-200 dark:border-slate-700 my-1" />
+            {/* Starred */}
+            {starred.length > 0 && (
+              <>
+                <p className="text-[10px] text-slate-400 uppercase px-2 pt-1 pb-0.5 font-semibold flex items-center gap-1">
+                  <Star size={8} className="fill-amber-400 text-amber-400" /> Starred
+                </p>
+                {starred.map(renderSession)}
+                <div className="border-b border-slate-200 dark:border-slate-700 my-1" />
+              </>
+            )}
+
+            {/* Regular sessions */}
+            {unstarred.map(renderSession)}
+
+            {sessions.length === 0 && (
+              <div className="text-center py-8">
+                <MessageSquare size={20} className="mx-auto text-slate-300 mb-2" />
+                <p className="text-xs text-slate-400">No chats yet</p>
+                <button
+                  onClick={handleNew}
+                  className="mt-2 text-xs text-reclaw-600 hover:text-reclaw-700"
+                >
+                  Start a conversation
+                </button>
+              </div>
+            )}
           </>
-        )}
-
-        {/* Regular sessions */}
-        {unstarred.map(renderSession)}
-
-        {sessions.length === 0 && !loading && (
-          <div className="text-center py-8">
-            <MessageSquare size={20} className="mx-auto text-slate-300 mb-2" />
-            <p className="text-xs text-slate-400">No chats yet</p>
-            <button
-              onClick={handleNew}
-              className="mt-2 text-xs text-reclaw-600 hover:text-reclaw-700"
-            >
-              Start a conversation
-            </button>
-          </div>
         )}
       </div>
     </div>

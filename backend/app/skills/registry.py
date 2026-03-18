@@ -58,15 +58,20 @@ def load_default_skills() -> None:
     from app.skills.discover.user_interviews import UserInterviewsSkill
     from app.skills.discover.contextual_inquiry import ContextualInquirySkill
     from app.skills.discover.diary_studies import DiaryStudiesSkill
+    from app.skills.intercoder import KappaIntercoderSkill
 
     registry.register(UserInterviewsSkill)
     registry.register(ContextualInquirySkill)
     registry.register(DiaryStudiesSkill)
+    registry.register(KappaIntercoderSkill)
 
     # Factory-generated skills (standard pattern)
     from app.skills.all_skills import ALL_FACTORY_SKILLS
 
     for skill_class in ALL_FACTORY_SKILLS:
+        # Skip factory kappa — replaced by hand-written KappaIntercoderSkill
+        if skill_class().name == "kappa-thematic-analysis":
+            continue
         registry.register(skill_class)
 
     logger.info(f"Loaded {len(registry.list_all())} skills total.")

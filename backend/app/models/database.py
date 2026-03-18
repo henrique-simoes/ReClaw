@@ -39,7 +39,7 @@ async def get_db() -> AsyncSession:
 async def init_db() -> None:
     """Create all database tables."""
     # Import all models so they're registered with Base
-    from app.models import agent, finding, message, project, session, task  # noqa: F401
+    from app.models import agent, codebook, finding, message, project, session, task  # noqa: F401
     from app.core.context_hierarchy import ContextDocument  # noqa: F401
     from app.core.scheduler import ScheduledTask  # noqa: F401
 

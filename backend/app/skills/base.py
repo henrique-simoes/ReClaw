@@ -123,6 +123,9 @@ class BaseSkill(ABC):
     async def validate_output(self, output: SkillOutput) -> list[str]:
         """Validate the skill output for quality issues.
 
+        Checks: summary presence, evidence extraction, source attribution,
+        phrase-level coding rules, and evidence chain integrity.
+
         Args:
             output: The output to validate.
 
@@ -140,6 +143,21 @@ class BaseSkill(ABC):
         for nugget in output.nuggets:
             if not nugget.get("source"):
                 warnings.append(f"Nugget missing source: '{nugget.get('text', '')[:50]}...'")
+            # Phrase-level coding: nugget text should be 3-30 words
+            text = nugget.get("text", "")
+            word_count = len(text.split())
+            if word_count < 3:
+                warnings.append(f"Nugget too short ({word_count} words): '{text[:50]}...'")
+            if not nugget.get("tags"):
+                warnings.append(f"Nugget missing tags/codes: '{text[:50]}...'")
+
+        # Evidence chain: insights should reference facts or have supporting evidence
+        if output.insights and not output.facts and not output.nuggets:
+            warnings.append("Insights generated without supporting nuggets or facts (broken evidence chain).")
+
+        # Recommendations without insights
+        if output.recommendations and not output.insights:
+            warnings.append("Recommendations generated without supporting insights (broken evidence chain).")
 
         return warnings
 

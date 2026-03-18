@@ -421,7 +421,6 @@ export default function ChatView() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* Sessions sidebar */}
       {activeProjectId && (
         <ChatSessionsSidebar projectId={activeProjectId} />
       )}
