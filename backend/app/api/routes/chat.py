@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.agent import agent
 from app.core.context_summarizer import context_summarizer
 from app.core.ollama import ollama
@@ -263,7 +264,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
     # --- DAG-based context summarization: summarize older messages ----------
     try:
         messages, ctx_summary = await context_summarizer.apply_summarization(
-            system_prompt, messages
+            system_prompt, messages, session_id=request.session_id
         )
         if ctx_summary:
             import logging as _log
@@ -319,6 +320,15 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                 )
                 save_db.add(assistant_msg)
                 await save_db.commit()
+
+                # Trigger DAG compaction asynchronously
+                if settings.dag_enabled and request.session_id:
+                    try:
+                        from app.core.context_dag import context_dag
+                        import asyncio as _asyncio
+                        _asyncio.create_task(context_dag.compact_if_needed(request.session_id))
+                    except Exception:
+                        pass
 
                 sources = [
                     {"source": r.source, "score": r.score, "page": r.page}

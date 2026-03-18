@@ -1,6 +1,6 @@
 /** API client for ReClaw backend. */
 
-import type { ChatSession, ChatMessage, InferencePresetConfig } from "@/lib/types";
+import type { ChatSession, ChatMessage, InferencePresetConfig, DAGNode, DAGHealth, DAGExpandResult, DAGGrepResult } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -335,4 +335,25 @@ export const settings = {
     request<any>(`/api/settings/model?model_name=${model}`, { method: "POST" }),
   switchProvider: (provider: "ollama" | "lmstudio") =>
     request<any>(`/api/settings/provider?provider=${provider}`, { method: "POST" }),
+};
+
+// --- Context DAG ---
+
+export const contextDag = {
+  getStructure: (sessionId: string) =>
+    get<{
+      session_id: string;
+      nodes: DAGNode[];
+      stats: DAGHealth;
+    }>(`/api/context-dag/${sessionId}`),
+  health: (sessionId: string) =>
+    get<DAGHealth>(`/api/context-dag/${sessionId}/health`),
+  expand: (sessionId: string, nodeId: string) =>
+    post<DAGExpandResult>(`/api/context-dag/${sessionId}/expand`, { node_id: nodeId }),
+  grep: (sessionId: string, query: string) =>
+    post<DAGGrepResult>(`/api/context-dag/${sessionId}/grep`, { query }),
+  node: (sessionId: string, nodeId: string) =>
+    get<DAGNode>(`/api/context-dag/${sessionId}/node/${nodeId}`),
+  compact: (sessionId: string) =>
+    post<{ compacted: boolean }>(`/api/context-dag/${sessionId}/compact`, {}),
 };

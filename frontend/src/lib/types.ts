@@ -206,3 +206,52 @@ export interface WSEvent {
   data: Record<string, unknown>;
   timestamp: string;
 }
+
+// --- Context DAG ---
+
+export interface DAGNode {
+  id: string;
+  parent_id: string | null;
+  depth: number;
+  summary_text: string;
+  message_count: number;
+  token_count: number;
+  original_token_count: number;
+  child_node_ids: string[];
+  time_range_start: string;
+  time_range_end: string;
+  created_at: string;
+}
+
+export interface DAGHealth {
+  total_messages: number;
+  compacted_messages: number;
+  fresh_tail_size: number;
+  max_depth: number;
+  compression_ratio: number;
+  nodes_by_depth: Record<number, number>;
+  dag_enabled: boolean;
+}
+
+export interface DAGExpandResult {
+  node_id: string;
+  depth: number;
+  items: Array<{
+    id: string;
+    role?: string;
+    content: string;
+    created_at?: string;
+    type: "message" | "summary";
+  }>;
+}
+
+export interface DAGGrepResult {
+  query: string;
+  results: Array<{
+    message_id: string;
+    role: string;
+    content_excerpt: string;
+    created_at: string;
+    dag_node_id: string | null;
+  }>;
+}

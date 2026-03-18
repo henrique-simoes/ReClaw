@@ -14,12 +14,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
+  GitBranch,
 } from "lucide-react";
+import ContextDAGView from "./ContextDAGView";
 import { memory as memoryApi, agents as agentsApi } from "@/lib/api";
 import { useProjectStore } from "@/stores/projectStore";
 import { cn } from "@/lib/utils";
 
-type MemoryTab = "knowledge" | "agent" | "health";
+type MemoryTab = "knowledge" | "agent" | "health" | "context-dag";
 
 interface MemoryChunk {
   text: string;
@@ -601,6 +603,7 @@ export default function MemoryView() {
     { id: "knowledge", label: "Knowledge Base", icon: Database },
     { id: "agent", label: "Agent Memory", icon: Users },
     { id: "health", label: "Health", icon: Activity },
+    { id: "context-dag", label: "Context History", icon: GitBranch },
   ];
 
   return (
@@ -638,6 +641,7 @@ export default function MemoryView() {
         {activeTab === "knowledge" && <KnowledgeBaseTab projectId={activeProjectId} />}
         {activeTab === "agent" && <AgentMemoryTab projectId={activeProjectId} />}
         {activeTab === "health" && <HealthTab projectId={activeProjectId} />}
+        {activeTab === "context-dag" && <ContextDAGView />}
       </div>
     </div>
   );

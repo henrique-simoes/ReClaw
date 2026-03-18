@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import agents, audit, channels, chat, codebooks, files, findings, memory, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
+from app.api.routes import agents, audit, channels, chat, codebooks, context_dag as context_dag_routes, files, findings, memory, metrics, projects, scheduler as scheduler_routes, sessions, settings, skills, tasks
 from app.api.websocket import router as ws_router
 from app.channels.base import channel_router
 from app.channels.slack import SlackAdapter
@@ -159,6 +159,7 @@ app.include_router(scheduler_routes.router, prefix="/api", tags=["Schedules"])
 app.include_router(channels.router, prefix="/api", tags=["Channels"])
 app.include_router(sessions.router, prefix="/api", tags=["Sessions"])
 app.include_router(memory.router, prefix="/api", tags=["Memory"])
+app.include_router(context_dag_routes.router, prefix="/api", tags=["Context DAG"])
 app.include_router(ws_router)
 
 

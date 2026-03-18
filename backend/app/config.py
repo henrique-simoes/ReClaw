@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     rag_hybrid_vector_weight: float = 0.7
     rag_hybrid_keyword_weight: float = 0.3
 
+    # DAG Context Summarization
+    dag_enabled: bool = True
+    dag_fresh_tail_size: int = 32
+    dag_batch_size: int = 32
+    dag_rollup_threshold: int = 4
+    dag_summary_max_tokens: int = 300
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     def ensure_dirs(self) -> None:

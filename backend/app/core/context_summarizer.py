@@ -69,12 +69,29 @@ class ContextSummarizer:
         )
 
     async def apply_summarization(
-        self, system_prompt: str, messages: list[dict], budget: int | None = None
+        self, system_prompt: str, messages: list[dict],
+        session_id: str | None = None, budget: int | None = None,
     ) -> tuple[list[dict], ContextSummary | None]:
         """If messages exceed budget, summarize older ones.
 
+        When DAG-based summarization is enabled and a session_id is provided,
+        delegates to the DAG engine for lossless context compression. Falls
+        back to the lossy path on failure.
+
         Returns (modified_messages, summary_or_none).
         """
+        # DAG-based lossless path
+        if settings.dag_enabled and session_id:
+            try:
+                from app.core.context_dag import context_dag
+                dag_summaries, fresh = await context_dag.build_context_window(
+                    session_id, settings.dag_fresh_tail_size
+                )
+                if dag_summaries or fresh:
+                    return dag_summaries + fresh, None
+            except Exception as e:
+                logger.warning(f"DAG context build failed, falling back to lossy: {e}")
+
         max_tokens = budget or settings.max_context_tokens
 
         # Estimate total tokens
