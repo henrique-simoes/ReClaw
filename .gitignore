@@ -57,6 +57,9 @@ coverage/
 *.tsbuildinfo
 tests/simulation/.results/
 
+# Custom agent personas (UUID-named dirs created at runtime by custom agents)
+backend/app/agents/personas/[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-*/
+
 # Runtime data (usage stats, generated configs, skill evolution)
 backend/app/skills/definitions/_usage_stats.json
 backend/app/skills/definitions/_proposals.json
