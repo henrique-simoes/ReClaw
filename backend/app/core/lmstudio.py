@@ -1,6 +1,7 @@
 """Async LM Studio client — OpenAI-compatible API for inference and embeddings."""
 
 import json
+import time
 from typing import AsyncGenerator
 
 import httpx
@@ -17,6 +18,10 @@ class LMStudioClient:
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = (base_url or settings.lmstudio_host).rstrip("/")
         self._client: httpx.AsyncClient | None = None
+        # Cache for detect_loaded_model (avoids probing on every API call)
+        self._detected_model: str | None = None
+        self._detected_at: float = 0.0
+        self._detect_cache_ttl: float = 60.0  # seconds
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -37,7 +42,7 @@ class LMStudioClient:
             return False
 
     async def list_models(self) -> list[dict]:
-        """List all loaded models."""
+        """List all available models (downloaded in LM Studio)."""
         client = await self._get_client()
         resp = await client.get("/v1/models")
         resp.raise_for_status()
@@ -45,6 +50,42 @@ class LMStudioClient:
         # Normalize to Ollama-like format: [{"name": "...", ...}]
         models = data.get("data", [])
         return [{"name": m.get("id", ""), **m} for m in models]
+
+    async def detect_loaded_model(self, force: bool = False) -> str | None:
+        """Detect the actually loaded model via a minimal chat probe.
+
+        LM Studio's /v1/models returns ALL downloaded models, not just loaded ones.
+        The only reliable way to detect the loaded model is a minimal chat request —
+        the response includes a 'model' field with the model that actually served it.
+
+        Results are cached for 60 seconds to avoid slowing down every API call.
+        Pass ``force=True`` to bypass the cache (e.g. on startup).
+        """
+        # Return cached result if still fresh
+        if not force and self._detected_model and (time.time() - self._detected_at) < self._detect_cache_ttl:
+            return self._detected_model
+
+        try:
+            client = await self._get_client()
+            resp = await client.post(
+                "/v1/chat/completions",
+                json={
+                    "messages": [{"role": "user", "content": "hi"}],
+                    "max_tokens": 1,
+                    "stream": False,
+                },
+                timeout=15.0,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                model = data.get("model")
+                if model:
+                    self._detected_model = model
+                    self._detected_at = time.time()
+                return model
+        except Exception:
+            pass
+        return self._detected_model  # Return stale cache on error
 
     async def pull_model(self, model_name: str) -> AsyncGenerator[dict, None]:
         """No-op for LM Studio — models are managed via the GUI."""

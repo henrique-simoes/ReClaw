@@ -151,6 +151,7 @@ async function loadScenarios() {
     "23-memory-view",
     "24-context-dag",
     "25-systemic-robustness",
+    "26-model-session-persistence",
   ];
 
   const scenarios = [];

@@ -227,6 +227,12 @@ async def auto_detect_provider() -> None:
     if await fallback.health():
         settings.llm_provider = fallback_name
         self_module.ollama = fallback
+        # Persist the auto-detected provider so it survives restarts
+        try:
+            from app.api.routes.settings import _persist_env
+            _persist_env("LLM_PROVIDER", fallback_name)
+        except Exception:
+            pass
         print(f"Auto-detected LLM provider: {fallback_name}")
     else:
         await fallback.close()

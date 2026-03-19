@@ -53,13 +53,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set({ loading: true });
     try {
       const sessions = await sessionsApi.list(projectId);
-      // Restore saved session if it exists in the fetched list
+      // Restore saved session if it exists in the fetched list;
+      // otherwise auto-select the most recent session so the UI never shows empty.
       const current = get().activeSessionId;
       const hasCurrent = current && sessions.some((s) => s.id === current);
+      const resolvedId = hasCurrent
+        ? current
+        : sessions.length > 0
+          ? sessions[0].id
+          : null;
+      if (resolvedId && resolvedId !== current) saveSessionId(resolvedId);
       set({
         sessions,
         loading: false,
-        activeSessionId: hasCurrent ? current : get().activeSessionId,
+        activeSessionId: resolvedId,
       });
     } catch {
       set({ loading: false });

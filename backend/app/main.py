@@ -30,6 +30,18 @@ from app.skills.registry import load_default_skills
 from app.skills.skill_manager import skill_manager
 
 
+def _persist_env_startup(key: str, value: str, logger=None) -> None:
+    """Persist a key to .env during startup (reuses settings.py logic)."""
+    try:
+        from app.api.routes.settings import _persist_env
+        _persist_env(key, value)
+        if logger:
+            logger.info(f"Auto-persisted {key}={value} to .env")
+    except Exception as e:
+        if logger:
+            logger.warning(f"Could not persist {key} to .env: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application startup and shutdown lifecycle."""
@@ -42,6 +54,54 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with async_session() as db:
         await seed_system_agents(db)
     skill_manager.load_all()
+
+    # Startup cleanup: remove orphaned sessions/messages whose project no longer exists
+    import logging as _startup_log
+    _cleanup_log = _startup_log.getLogger("startup.cleanup")
+    try:
+        from sqlalchemy import delete as sa_delete, select as sa_select
+        from app.models.session import ChatSession
+        from app.models.message import Message
+        from app.models.project import Project
+
+        async with async_session() as db:
+            # Find all project IDs that actually exist
+            existing_result = await db.execute(sa_select(Project.id))
+            existing_ids = {row[0] for row in existing_result.fetchall()}
+
+            # Find orphaned sessions (project_id not in existing projects)
+            all_sessions_result = await db.execute(sa_select(ChatSession))
+            all_sessions = all_sessions_result.scalars().all()
+            orphaned_session_ids = [
+                s.id for s in all_sessions if s.project_id not in existing_ids
+            ]
+
+            # Find orphaned messages (session not in any existing session)
+            if orphaned_session_ids:
+                from app.models.context_dag import ContextDAGNode
+                await db.execute(
+                    sa_delete(ContextDAGNode).where(
+                        ContextDAGNode.session_id.in_(orphaned_session_ids)
+                    )
+                )
+                await db.execute(
+                    sa_delete(Message).where(
+                        Message.session_id.in_(orphaned_session_ids)
+                    )
+                )
+                await db.execute(
+                    sa_delete(ChatSession).where(
+                        ChatSession.id.in_(orphaned_session_ids)
+                    )
+                )
+                await db.commit()
+                _cleanup_log.info(
+                    f"Startup cleanup: removed {len(orphaned_session_ids)} orphaned session(s)"
+                )
+            else:
+                _cleanup_log.info("Startup cleanup: no orphaned records found")
+    except Exception as e:
+        _cleanup_log.warning(f"Startup cleanup skipped: {e}")
 
     # Register channel adapters (opt-in — not auto-started)
     channel_router.register(SlackAdapter())
@@ -58,13 +118,50 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         current_client = ollama_mod.ollama
         if await current_client.health():
             _log.info(f"LLM provider ({app_settings.llm_provider}) is online.")
+            models = await current_client.list_models()
+            model_names = [m.get("name", "") for m in models]
+
             if app_settings.llm_provider == "ollama":
-                models = await current_client.list_models()
-                model_names = [m.get("name", "") for m in models]
                 if not any(app_settings.ollama_model in n for n in model_names):
                     _log.info(f"Pulling default model: {app_settings.ollama_model}")
                     async for _ in current_client.pull_model(app_settings.ollama_model):
                         pass
+                # Auto-detect if configured model is "default" or not loaded
+                active = app_settings.ollama_model
+                if active == "default" or not any(active in n for n in model_names):
+                    non_embed = [n for n in model_names if "embed" not in n.lower()]
+                    if non_embed:
+                        resolved = non_embed[0]
+                        app_settings.ollama_model = resolved
+                        _log.info(f"Ollama active model resolved to: {resolved}")
+                        _persist_env_startup("OLLAMA_MODEL", resolved, _log)
+            elif app_settings.llm_provider == "lmstudio":
+                # Detect the ACTUALLY loaded model by probing LM Studio.
+                # /v1/models lists all downloaded models, not just loaded ones.
+                # The only reliable detection is a minimal chat probe — the
+                # response's 'model' field reveals which model is serving.
+                from app.core.lmstudio import LMStudioClient
+                lms_client = current_client if isinstance(current_client, LMStudioClient) else LMStudioClient()
+                loaded = await lms_client.detect_loaded_model(force=True)
+                if loaded and loaded != app_settings.lmstudio_model:
+                    app_settings.lmstudio_model = loaded
+                    _log.info(f"LM Studio active model detected: {loaded}")
+                    _persist_env_startup("LMSTUDIO_MODEL", loaded, _log)
+                elif loaded:
+                    _log.info(f"LM Studio model confirmed: {loaded}")
+                elif not loaded:
+                    # Fallback: pick from model list if probe fails
+                    active = app_settings.lmstudio_model
+                    non_embed = [n for n in model_names if "embed" not in n.lower()]
+                    if active == "default" or (active and active not in model_names):
+                        if non_embed:
+                            resolved = non_embed[0]
+                            app_settings.lmstudio_model = resolved
+                            _log.info(f"LM Studio model fallback to: {resolved}")
+                            _persist_env_startup("LMSTUDIO_MODEL", resolved, _log)
+                        elif model_names:
+                            app_settings.lmstudio_model = model_names[0]
+                            _persist_env_startup("LMSTUDIO_MODEL", model_names[0], _log)
         else:
             _log.warning(f"LLM provider ({app_settings.llm_provider}) is not reachable.")
     except Exception:
