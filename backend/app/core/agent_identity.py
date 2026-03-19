@@ -11,7 +11,15 @@ containing structured markdown files that define the agent's identity:
 The identity loader composes these files into a rich system prompt that
 gives each agent a distinct personality and deep domain knowledge.  For
 small models with limited context windows, the loader can compress the
-prompt to fit within the available budget.
+prompt to fit within the available budget using two strategies:
+
+    1. **Prompt RAG** — Retrieve only the most relevant persona sections
+       for the current query (query-aware, best accuracy).
+    2. **LLMLingua-style compression** — Heuristic token-level compression
+       that removes filler words and low-information content (fast, always
+       available).
+    3. **Proportional truncation** — Legacy fallback: budget-weighted
+       file truncation.
 """
 
 from __future__ import annotations
@@ -38,6 +46,12 @@ FILE_BUDGET_WEIGHTS = {
     "PROTOCOLS.md": 0.25,
     "MEMORY.md": 0.10,
 }
+
+# Compression strategy: "prompt_rag", "llmlingua", "truncate"
+# - prompt_rag: Best for query-aware contexts (chat) — retrieves relevant sections
+# - llmlingua: Best for general compression — heuristic token-level
+# - truncate: Legacy fallback — proportional file truncation
+DEFAULT_COMPRESSION_STRATEGY = "llmlingua"
 
 
 def _load_persona_file(agent_id: str, filename: str) -> str | None:
@@ -71,16 +85,24 @@ def _truncate_to_tokens(text: str, max_tokens: int) -> str:
     return truncated + "\n\n[...truncated for context window budget]"
 
 
-def load_agent_identity(agent_id: str, max_tokens: int | None = None) -> str:
+def load_agent_identity(
+    agent_id: str,
+    max_tokens: int | None = None,
+    strategy: str | None = None,
+) -> str:
     """Load and compose the full agent identity from persona MD files.
 
     Args:
         agent_id: The agent's ID (maps to persona directory name).
         max_tokens: Optional token budget for the identity prompt.
-            If the composed identity exceeds this budget, files are
-            proportionally truncated based on priority weights.
+            If the composed identity exceeds this budget, compression
+            is applied using the chosen strategy.
             If None, uses settings.max_context_tokens * 0.3 (30% of
             context window reserved for agent identity).
+        strategy: Compression strategy when over budget.
+            "llmlingua" — Heuristic token-level compression (default).
+            "truncate"  — Legacy proportional file truncation.
+            None uses DEFAULT_COMPRESSION_STRATEGY.
 
     Returns:
         Composed identity string ready to use as system prompt content.
@@ -111,16 +133,40 @@ def load_agent_identity(agent_id: str, max_tokens: int | None = None) -> str:
     if total_tokens <= budget:
         return composed
 
-    # Compress: allocate budget proportionally by file weight
+    # --- Compression needed ---
+    compression_strategy = strategy or DEFAULT_COMPRESSION_STRATEGY
+
     logger.info(
         f"Compressing agent identity for {agent_id}: "
-        f"{total_tokens} tokens -> {budget} budget"
+        f"{total_tokens} tokens -> {budget} budget "
+        f"(strategy: {compression_strategy})"
     )
 
+    if compression_strategy == "llmlingua":
+        return _compress_llmlingua(composed, budget)
+    else:
+        return _compress_truncate(sections, budget)
+
+
+def _compress_llmlingua(composed: str, budget_tokens: int) -> str:
+    """Compress using LLMLingua-inspired heuristic compression."""
+    try:
+        from app.core.prompt_compressor import compress_prompt
+        return compress_prompt(composed, max_tokens=budget_tokens)
+    except Exception as e:
+        logger.warning(f"LLMLingua compression failed, falling back to truncate: {e}")
+        return _truncate_to_tokens(composed, budget_tokens)
+
+
+def _compress_truncate(
+    sections: list[tuple[str, str]],
+    budget_tokens: int,
+) -> str:
+    """Legacy compression: proportional file truncation."""
     compressed_sections = []
     for filename, content in sections:
         weight = FILE_BUDGET_WEIGHTS.get(filename, 0.25)
-        file_budget = int(budget * weight)
+        file_budget = int(budget_tokens * weight)
         compressed = _truncate_to_tokens(content, file_budget)
         compressed_sections.append(compressed)
 

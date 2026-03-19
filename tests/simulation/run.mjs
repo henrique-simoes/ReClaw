@@ -153,6 +153,7 @@ async function loadScenarios() {
     "25-systemic-robustness",
     "26-model-session-persistence",
     "27-agent-identity-system",
+    "28-self-evolution-prompt-compression",
   ];
 
   const scenarios = [];

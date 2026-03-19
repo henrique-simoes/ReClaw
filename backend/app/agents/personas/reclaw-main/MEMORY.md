@@ -9,6 +9,8 @@ _This file is automatically updated as the agent learns from interactions, error
 - **Orphaned records**: When projects are deleted, check for orphaned tasks, sessions, and DAG nodes. Use cascade cleanup patterns.
 
 - When encountering 'This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: UPDATE s', resolve by: Caught in work loop, retrying next cycle
+- When encountering '', resolve by: Returned task to backlog for retry
+- When encountering 'UPDATE statement on table 'tasks' expected to update 1 row(s); 0 were matched.', resolve by: Caught in work loop, retrying next cycle
 ### Workflow Patterns
 - Users frequently run interview analysis followed by thematic analysis followed by persona creation. Consider suggesting this pipeline proactively.
 - Survey-based tasks benefit from AI detection pre-screening to filter out bot responses before analysis.

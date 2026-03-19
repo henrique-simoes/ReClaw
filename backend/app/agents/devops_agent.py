@@ -150,13 +150,43 @@ class DevOpsAuditAgent:
             else:
                 checks_passed.append("system_resources")
 
+        # 7. Self-evolution scan (piggyback on audit cycle)
+        evolution_results = await self._run_evolution_scan()
+        if evolution_results:
+            checks_passed.append("self_evolution")
+
         return {
             "timestamp": timestamp,
             "status": "issues_found" if issues else "clean",
             "checks_passed": checks_passed,
             "issues": issues,
             "total_checks": len(checks_passed) + (1 if issues else 0),
+            "evolution": evolution_results,
         }
+
+    async def _run_evolution_scan(self) -> dict | None:
+        """Run self-evolution scan for all agents as part of the audit cycle."""
+        try:
+            from app.core.self_evolution import self_evolution
+            results = await self_evolution.scan_all_agents()
+            total_candidates = sum(len(v) for v in results.values())
+
+            if total_candidates > 0:
+                logger.info(
+                    f"Self-evolution scan: {total_candidates} candidates "
+                    f"across {len(results)} agents"
+                )
+
+            return {
+                "agents_scanned": len(results),
+                "total_candidates": total_candidates,
+                "agent_candidates": {
+                    k: len(v) for k, v in results.items()
+                },
+            }
+        except Exception as e:
+            logger.debug(f"Evolution scan skipped: {e}")
+            return None
 
     async def _check_data_integrity(self, db: AsyncSession) -> list[dict]:
         """Check for data integrity issues across the database."""

@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     dag_rollup_threshold: int = 4
     dag_summary_max_tokens: int = 300
 
+    # Agent Identity & Evolution
+    prompt_compression_strategy: str = "llmlingua"  # "llmlingua", "prompt_rag", "truncate"
+    prompt_rag_use_embeddings: bool = True  # Use embedding similarity for Prompt RAG
+    prompt_rag_top_k: int = 8  # Number of dynamic sections to retrieve
+    self_evolution_enabled: bool = True  # Enable auto self-evolution scan
+    self_evolution_auto_promote: bool = False  # Auto-promote (vs user approval)
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     def ensure_dirs(self) -> None:

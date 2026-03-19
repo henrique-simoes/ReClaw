@@ -93,7 +93,7 @@ async def get_agent_log(limit: int = 50):
 
 @router.post("/agents", status_code=201)
 async def create_agent(data: CreateAgentRequest, db: AsyncSession = Depends(get_db)):
-    """Create a new user agent."""
+    """Create a new user agent with full persona file support."""
     agent = await agent_service.create_agent(
         db,
         name=data.name,
@@ -102,6 +102,17 @@ async def create_agent(data: CreateAgentRequest, db: AsyncSession = Depends(get_
         capabilities=data.capabilities,
         heartbeat_interval=data.heartbeat_interval,
     )
+
+    # Auto-create persona MD files for the custom agent so it can
+    # participate in the self-evolution pipeline (same as system agents)
+    try:
+        from app.core.self_evolution import self_evolution
+        await self_evolution.create_persona_for_custom_agent(
+            agent["id"], data.name, data.system_prompt
+        )
+    except Exception:
+        pass  # Non-critical — agent still works via DB system_prompt
+
     try:
         from app.api.websocket import manager as ws_manager
         await ws_manager.broadcast("agent_created", agent)
@@ -265,6 +276,152 @@ async def get_learnings(
         agent_id, category=category, limit=limit
     )
     return {"agent_id": agent_id, "learnings": learnings}
+
+
+# ───── Self-Evolution ─────
+
+
+@router.get("/agents/{agent_id}/evolution/candidates")
+async def get_evolution_candidates(agent_id: str):
+    """Scan an agent's learnings for patterns ready for promotion."""
+    from app.core.self_evolution import self_evolution
+    candidates = await self_evolution.scan_for_promotions(agent_id)
+    return {
+        "agent_id": agent_id,
+        "candidates": candidates,
+        "count": len(candidates),
+    }
+
+
+@router.post("/agents/{agent_id}/evolution/promote/{learning_id}")
+async def promote_learning(agent_id: str, learning_id: int, target_file: str | None = None):
+    """Promote a specific learning into the agent's persona files."""
+    from app.core.self_evolution import self_evolution
+    result = await self_evolution.promote_learning(agent_id, learning_id, target_file)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Promotion failed"))
+    return result
+
+
+@router.post("/agents/{agent_id}/evolution/auto")
+async def auto_evolve(agent_id: str):
+    """Run the full self-evolution cycle (auto-promote mature patterns)."""
+    from app.core.self_evolution import self_evolution
+    promotions = await self_evolution.auto_evolve(agent_id)
+    return {
+        "agent_id": agent_id,
+        "promotions_applied": len(promotions),
+        "promotions": promotions,
+    }
+
+
+@router.get("/agents/evolution/scan")
+async def scan_all_evolution():
+    """Scan all agents for promotable learnings."""
+    from app.core.self_evolution import self_evolution
+    results = await self_evolution.scan_all_agents()
+    total = sum(len(v) for v in results.values())
+    return {
+        "agents_with_candidates": len(results),
+        "total_candidates": total,
+        "results": results,
+    }
+
+
+# ───── Prompt Compression ─────
+
+
+@router.get("/agents/{agent_id}/prompt/stats")
+async def get_prompt_stats(agent_id: str):
+    """Get compression stats for an agent's system prompt."""
+    from app.core.agent_identity import load_agent_identity, _estimate_tokens
+    from app.core.prompt_compressor import compress_prompt
+
+    full = load_agent_identity(agent_id)
+    if not full:
+        raise HTTPException(status_code=404, detail="No persona files found")
+
+    compressed = compress_prompt(full, max_tokens=2048)
+    return {
+        "agent_id": agent_id,
+        "full_chars": len(full),
+        "full_tokens": _estimate_tokens(full),
+        "compressed_chars": len(compressed),
+        "compressed_tokens": _estimate_tokens(compressed),
+        "compression_ratio": round(len(compressed) / len(full), 3) if full else 0,
+    }
+
+
+class PromptComposeRequest(BaseModel):
+    query: str
+    max_tokens: int | None = None
+    use_embeddings: bool = False  # Default to keyword for fast testing
+    top_k: int = 8
+
+
+@router.post("/agents/{agent_id}/prompt/compose")
+async def compose_prompt_for_query(agent_id: str, data: PromptComposeRequest):
+    """Compose a query-aware prompt via Prompt RAG and return diagnostic info.
+
+    This endpoint reveals which persona sections are selected for a given
+    query — critical for verifying that small models receive relevant
+    context rather than the entire persona.
+    """
+    from app.core.prompt_rag import (
+        compose_dynamic_prompt,
+        index_agent_sections,
+        _extract_identity_anchor,
+        _tokenize,
+        _keyword_similarity,
+    )
+    from app.core.agent_identity import load_agent_identity, _estimate_tokens
+
+    full_identity = load_agent_identity(agent_id)
+    if not full_identity:
+        raise HTTPException(status_code=404, detail="No persona files found")
+
+    # Compose the dynamic prompt
+    composed = await compose_dynamic_prompt(
+        agent_id,
+        query=data.query,
+        max_tokens=data.max_tokens,
+        use_embeddings=data.use_embeddings,
+        top_k=data.top_k,
+    )
+
+    # Get section-level details for diagnostics
+    all_sections = index_agent_sections(agent_id)
+    query_tokens = _tokenize(data.query)
+    section_scores = []
+    for section in all_sections:
+        score = _keyword_similarity(query_tokens, section)
+        section_scores.append({
+            "header": section.header,
+            "filename": section.filename,
+            "score": round(score, 4),
+            "tokens": section.token_estimate,
+            "included": section.header in composed or section.content[:80] in composed,
+        })
+
+    section_scores.sort(key=lambda x: x["score"], reverse=True)
+
+    anchor = _extract_identity_anchor(agent_id)
+
+    return {
+        "agent_id": agent_id,
+        "query": data.query,
+        "full_tokens": _estimate_tokens(full_identity),
+        "composed_tokens": _estimate_tokens(composed),
+        "anchor_tokens": _estimate_tokens(anchor),
+        "savings_percent": round(
+            (1 - len(composed) / len(full_identity)) * 100, 1
+        ) if full_identity else 0,
+        "total_sections": len(all_sections),
+        "sections_included": sum(1 for s in section_scores if s["included"]),
+        "section_scores": section_scores[:20],  # Top 20 for diagnostics
+        "composed_prompt_preview": composed[:500] + "..." if len(composed) > 500 else composed,
+        "identity_preserved": bool(anchor and anchor[:100] in composed[:200]),
+    }
 
 
 # ───── Agent Memory ─────

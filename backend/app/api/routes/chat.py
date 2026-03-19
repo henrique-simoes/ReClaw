@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.agent import agent
 from app.core.agent_identity import load_agent_identity, get_agent_display_name
+from app.core.prompt_rag import compose_dynamic_prompt, compose_keyword_prompt
 from app.core.context_summarizer import context_summarizer
 from app.core.ollama import ollama
 from app.core.rag import build_augmented_prompt, retrieve_context
@@ -241,13 +242,24 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
                 llm_model = session.model_override
 
             # Load agent identity for this session
+            # Use Prompt RAG for query-aware identity (retrieves relevant
+            # persona sections based on the user's message)
             session_agent_id = session.agent_id
             if session_agent_id:
-                agent_identity_prompt = load_agent_identity(session_agent_id)
+                try:
+                    agent_identity_prompt = await compose_dynamic_prompt(
+                        session_agent_id,
+                        query=request.message,
+                        use_embeddings=True,
+                    )
+                except Exception:
+                    # Fall back to full identity load
+                    agent_identity_prompt = load_agent_identity(session_agent_id)
+
                 if agent_identity_prompt:
                     _chat_log.info(
                         f"Loaded agent identity for {session_agent_id} "
-                        f"({len(agent_identity_prompt)} chars)"
+                        f"({len(agent_identity_prompt)} chars, prompt-rag)"
                     )
                 else:
                     # Fallback: load system_prompt from DB agent record
@@ -265,7 +277,14 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)):
 
     # If no agent identity loaded yet, default to reclaw-main
     if not agent_identity_prompt:
-        agent_identity_prompt = load_agent_identity("reclaw-main")
+        try:
+            agent_identity_prompt = await compose_dynamic_prompt(
+                "reclaw-main",
+                query=request.message,
+                use_embeddings=True,
+            )
+        except Exception:
+            agent_identity_prompt = load_agent_identity("reclaw-main")
 
     # Retrieve context via RAG
     rag_context = await retrieve_context(request.project_id, request.message)
